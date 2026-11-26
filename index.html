@@ -3,7 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>퀵툴즈 (QuickTools) - 100% 브라우저 로컬 파일·텍스트 유틸리티</title>
+    <title>뚝딱툴 (TtukttakTool) - 100% 브라우저 로컬 파일·텍스트 유틸리티</title>
+    <meta name="description" content="뚝딱툴(TtukttakTool)은 설치나 회원가입 없이 브라우저에서 즉시 사용하는 무료 실생활 유틸리티입니다. 이미지 용량 줄이기·변환, 사진 PDF 변환, 글자수 세기, PDF 합치기, QR 코드 생성, 비밀번호 생성기, 이미지 크기 조절, 코드 정리를 100% 로컬에서 안전하게 해결하세요.">
+    <meta name="keywords" content="뚝딱툴, TtukttakTool, 무료 웹 유틸리티, 이미지 용량 줄이기, 사진 PDF 변환, 글자수 세기, PDF 합치기, QR 코드 생성기, 비밀번호 생성기, 이미지 크기 조절">
+    <meta property="og:title" content="뚝딱툴 (TtukttakTool) - 무설치 실생활 파일·텍스트 유틸리티">
+    <meta property="og:description" content="서버 전송 없이 내 기기에서 뚝딱 해결하는 8가지 무료 웹 도구">
+    <meta property="og:type" content="website">
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts: Pretendard & Inter -->
@@ -88,10 +93,11 @@
         <div class="max-w-4xl mx-auto px-4">
             <div class="flex items-center justify-between h-14">
                 <div class="flex items-center gap-2">
-                    <div class="w-8 h-8 rounded-xl bg-brand-600 text-white flex items-center justify-center font-bold text-lg shadow-sm">
-                        Q
+                    <div class="w-8 h-8 rounded-xl bg-brand-600 text-white flex items-center justify-center font-bold text-base shadow-sm">
+                        뚝
                     </div>
-                    <span class="font-bold text-lg tracking-tight text-slate-900">QuickTools</span>
+                    <span class="font-bold text-lg tracking-tight text-slate-900">뚝딱툴</span>
+                    <span class="hidden xs:inline text-xs font-medium text-slate-400">TtukttakTool</span>
                 </div>
                 <span class="text-xs font-medium px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
                     100% 로컬 처리
@@ -774,9 +780,9 @@
         <!-- =================================================================== -->
         <section class="mt-8 bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5 sm:p-6 space-y-6">
             <div>
-                <h2 class="text-base font-bold text-slate-900 mb-2">QuickTools 무료 웹 유틸리티 안내</h2>
+                <h2 class="text-base font-bold text-slate-900 mb-2">뚝딱툴(TtukttakTool) 무료 웹 유틸리티 안내</h2>
                 <p class="text-xs sm:text-sm text-slate-600 leading-relaxed">
-                    QuickTools는 별도의 프로그램 설치나 회원가입 없이 웹 브라우저에서 즉시 사용할 수 있는 올인원 실생활 문서·미디어 도구입니다.
+                    뚝딱툴(TtukttakTool)은 별도의 프로그램 설치나 회원가입 없이 웹 브라우저에서 즉시 사용할 수 있는 올인원 실생활 문서·미디어 도구입니다.
                     모든 연산은 사용자의 기기(Client-side) 내에서 HTML5 Canvas 및 최신 Web API를 통해 직접 처리되므로, 민감한 개인 문서나 사진이 외부 서버로 전송되지 않아 완벽한 개인정보 보호를 보장합니다.
                 </p>
             </div>
@@ -855,7 +861,7 @@
             <span>|</span>
             <button type="button" onclick="openPolicyModal('terms')" class="hover:text-slate-600 underline underline-offset-2 whitespace-nowrap">이용약관</button>
             <span>|</span>
-            <span class="whitespace-nowrap">© 2026 QuickTools</span>
+            <span class="whitespace-nowrap">© 2026 뚝딱툴 (TtukttakTool)</span>
         </div>
     </footer>
 
@@ -1609,14 +1615,14 @@
             if (type === 'privacy') {
                 title.textContent = '개인정보처리방침';
                 content.innerHTML = `
-                    <p><strong>1. 개인정보 및 파일의 수집·저장 여부</strong><br>QuickTools(이하 '본 서비스')는 회원가입 절차가 없으며, 사용자가 업로드하는 이미지, PDF 문서, 입력 텍스트 등 어떠한 파일이나 데이터도 외부 서버로 전송하거나 수집·저장하지 않습니다. 모든 변환 작업은 사용자의 브라우저 내에서 로컬로만 처리됩니다.</p>
+                    <p><strong>1. 개인정보 및 파일의 수집·저장 여부</strong><br>뚝딱툴(TtukttakTool, 이하 '본 서비스')은 회원가입 절차가 없으며, 사용자가 업로드하는 이미지, PDF 문서, 입력 텍스트 등 어떠한 파일이나 데이터도 외부 서버로 전송하거나 수집·저장하지 않습니다. 모든 변환 작업은 사용자의 브라우저 내에서 로컬로만 처리됩니다.</p>
                     <p><strong>2. 쿠키(Cookie) 및 맞춤형 광고 안내</strong><br>본 서비스는 무료 운영을 위해 Google AdSense 등 제3자 광고 서비스를 게재할 수 있습니다. Google을 포함한 제3자 공급업체는 사용자의 이전 웹사이트 방문 기록을 기반으로 광고를 게재하기 위해 쿠키를 사용합니다.</p>
                     <p><strong>3. 맞춤형 광고 설정 해제</strong><br>사용자는 <a href="https://adssettings.google.com" target="_blank" rel="noopener noreferrer" class="text-brand-600 underline">Google 광고 설정</a> 페이지를 방문하여 맞춤형 광고를 사용 중지할 수 있습니다.</p>
                 `;
             } else {
                 title.textContent = '이용약관';
                 content.innerHTML = `
-                    <p><strong>1. 목적</strong><br>본 약관은 QuickTools가 제공하는 웹 기반 파일·텍스트 유틸리티 서비스의 이용 조건 및 절차에 관한 사항을 규정합니다.</p>
+                    <p><strong>1. 목적</strong><br>본 약관은 뚝딱툴(TtukttakTool)이 제공하는 웹 기반 파일·텍스트 유틸리티 서비스의 이용 조건 및 절차에 관한 사항을 규정합니다.</p>
                     <p><strong>2. 서비스 이용 및 책임의 한계</strong><br>본 서비스는 무료로 제공되며, 사용자는 합법적인 목적에 한해 서비스를 이용할 수 있습니다. 브라우저 환경이나 기기 성능에 따라 대용량 파일 처리 시 메모리 제한이 발생할 수 있으며, 중요한 원본 파일은 반드시 별도로 백업한 후 이용하시기 바랍니다.</p>
                     <p><strong>3. 지식재산권</strong><br>사용자가 본 도구를 통해 변환·생성한 결과물에 대한 모든 권리는 원저작자 및 사용자 본인에게 귀속됩니다.</p>
                 `;
