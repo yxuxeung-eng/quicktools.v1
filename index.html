@@ -1,0 +1,1983 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>퀵툴즈 (QuickTools) - 100% 브라우저 로컬 파일·텍스트 유틸리티</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Pretendard & Inter -->
+    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+    <!-- pdf-lib for PDF Merge & Extract -->
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <!-- QRCode.js for QR Code Generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Pretendard', '-apple-system', 'BlinkMacSystemFont', 'system-ui', 'Roboto', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* 커스텀 스크롤바 및 터치 최적화 */
+        html, body {
+            -webkit-tap-highlight-color: transparent;
+            background-color: #f8fafc;
+            overflow-x: hidden;
+            max-width: 100%;
+        }
+        /* 탭 스크롤바 숨김 */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        /* 레인지 슬라이더 커스텀 */
+        input[type=range] {
+            -webkit-appearance: none;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 22px;
+            width: 22px;
+            border-radius: 50%;
+            background: #2563eb;
+            cursor: pointer;
+            margin-top: -8px;
+            box-shadow: 0 2px 6px rgba(37, 99, 235, 0.4);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 6px;
+            cursor: pointer;
+            background: #e2e8f0;
+            border-radius: 999px;
+        }
+        /* 부드러운 전환 애니메이션 */
+        .fade-in {
+            animation: fadeIn 0.25s ease-out forwards;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="text-slate-800 antialiased min-h-screen flex flex-col justify-between">
+
+    <!-- 상단 헤더 & 네비게이션 -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30">
+        <div class="max-w-4xl mx-auto px-4">
+            <div class="flex items-center justify-between h-14">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-xl bg-brand-600 text-white flex items-center justify-center font-bold text-lg shadow-sm">
+                        Q
+                    </div>
+                    <span class="font-bold text-lg tracking-tight text-slate-900">QuickTools</span>
+                </div>
+                <span class="text-xs font-medium px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    100% 로컬 처리
+                </span>
+            </div>
+
+            <!-- 8개 핵심 기능 탭 메뉴 (모바일 가로 스와이프 + PC 균등 배치로 세로 공간 절약 및 넘침 방지) -->
+            <nav class="flex items-center gap-1.5 pb-2.5 pt-1 overflow-x-auto no-scrollbar sm:grid sm:grid-cols-8 sm:gap-1.5" role="tablist">
+                <button onclick="switchTab('img')" id="tab-img" class="tab-btn shrink-0 sm:shrink py-2 px-3 sm:px-1.5 rounded-xl text-xs sm:text-[12px] font-semibold transition-all bg-brand-600 text-white shadow-sm whitespace-nowrap">
+                    이미지 변환
+                </button>
+                <button onclick="switchTab('img2pdf')" id="tab-img2pdf" class="tab-btn shrink-0 sm:shrink py-2 px-3 sm:px-1.5 rounded-xl text-xs sm:text-[12px] font-semibold transition-all text-slate-600 hover:bg-slate-100 whitespace-nowrap">
+                    사진→PDF
+                </button>
+                <button onclick="switchTab('txt')" id="tab-txt" class="tab-btn shrink-0 sm:shrink py-2 px-3 sm:px-1.5 rounded-xl text-xs sm:text-[12px] font-semibold transition-all text-slate-600 hover:bg-slate-100 whitespace-nowrap">
+                    글자수·정리
+                </button>
+                <button onclick="switchTab('pdf')" id="tab-pdf" class="tab-btn shrink-0 sm:shrink py-2 px-3 sm:px-1.5 rounded-xl text-xs sm:text-[12px] font-semibold transition-all text-slate-600 hover:bg-slate-100 whitespace-nowrap">
+                    PDF 합치기
+                </button>
+                <button onclick="switchTab('qr')" id="tab-qr" class="tab-btn shrink-0 sm:shrink py-2 px-3 sm:px-1.5 rounded-xl text-xs sm:text-[12px] font-semibold transition-all text-slate-600 hover:bg-slate-100 whitespace-nowrap">
+                    QR 생성기
+                </button>
+                <button onclick="switchTab('pw')" id="tab-pw" class="tab-btn shrink-0 sm:shrink py-2 px-3 sm:px-1.5 rounded-xl text-xs sm:text-[12px] font-semibold transition-all text-slate-600 hover:bg-slate-100 whitespace-nowrap">
+                    비번 생성기
+                </button>
+                <button onclick="switchTab('resize')" id="tab-resize" class="tab-btn shrink-0 sm:shrink py-2 px-3 sm:px-1.5 rounded-xl text-xs sm:text-[12px] font-semibold transition-all text-slate-600 hover:bg-slate-100 whitespace-nowrap">
+                    크기 조절
+                </button>
+                <button onclick="switchTab('code')" id="tab-code" class="tab-btn shrink-0 sm:shrink py-2 px-3 sm:px-1.5 rounded-xl text-xs sm:text-[12px] font-semibold transition-all text-slate-600 hover:bg-slate-100 whitespace-nowrap">
+                    코드 정리
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- 메인 컨테이너 -->
+    <main class="flex-grow max-w-2xl w-full min-w-0 mx-auto px-3.5 sm:px-4 py-4 sm:py-5">
+
+        <!-- 상단 광고 슬롯 영역 (실제 광고 스크립트 삽입 전까지는 여백만 깔끔히 유지) -->
+        <div class="w-full empty:hidden mb-4 flex justify-center">
+            <!-- AD_SLOT_TOP -->
+        </div>
+
+        <!-- =================================================================== -->
+        <!-- 1. 이미지 용량 줄이기 & 확장자 변환 -->
+        <!-- =================================================================== -->
+        <section id="panel-img" class="tool-panel fade-in">
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5 sm:p-6">
+                <h1 class="text-xl font-bold text-slate-900 mb-1">이미지 용량 줄이기 & 변환</h1>
+                <p class="text-sm text-slate-500 mb-5">화질 저하를 최소화하며 파일 크기를 줄이고 포맷을 변경합니다.</p>
+
+                <!-- Step 1: 업로드 및 옵션 설정 -->
+                <div id="img-step-1">
+                    <!-- 드래그 앤 드롭 & 모바일 갤러리 선택 영역 -->
+                    <label for="img-input" id="img-dropzone" class="flex flex-col items-center justify-center w-full h-44 border-2 border-dashed border-slate-300 rounded-2xl cursor-pointer bg-slate-50 hover:bg-brand-50/50 hover:border-brand-500 transition-colors p-4 text-center">
+                        <svg class="w-10 h-10 text-brand-500 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        </svg>
+                        <span class="text-sm font-semibold text-slate-700" id="img-file-label">터치하여 이미지 선택 또는 드래그</span>
+                        <span class="text-xs text-slate-400 mt-1">JPG, PNG, WEBP 지원</span>
+                        <input id="img-input" type="file" accept="image/jpeg, image/png, image/webp" class="hidden" />
+                    </label>
+
+                    <!-- 옵션 컨트롤 (이미지 선택 후 활성화) -->
+                    <div id="img-controls" class="hidden mt-5 space-y-5 pt-5 border-t border-slate-100">
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 mb-2">변환할 확장자</label>
+                            <div class="grid grid-cols-3 gap-1.5 sm:gap-2">
+                                <button type="button" onclick="selectImgFormat('image/jpeg', 'jpg')" class="img-fmt-btn py-3 rounded-xl text-xs sm:text-sm font-bold border-2 border-brand-600 bg-brand-50 text-brand-700" data-fmt="image/jpeg">JPG</button>
+                                <button type="button" onclick="selectImgFormat('image/webp', 'webp')" class="img-fmt-btn py-3 rounded-xl text-xs sm:text-sm font-bold border border-slate-200 bg-white text-slate-600" data-fmt="image/webp">WEBP</button>
+                                <button type="button" onclick="selectImgFormat('image/png', 'png')" class="img-fmt-btn py-3 rounded-xl text-xs sm:text-sm font-bold border border-slate-200 bg-white text-slate-600" data-fmt="image/png">PNG</button>
+                            </div>
+                        </div>
+
+                        <div id="img-quality-box">
+                            <div class="flex justify-between items-center mb-2">
+                                <label for="img-quality" class="text-sm font-semibold text-slate-700">이미지 품질 (압축률)</label>
+                                <span id="img-quality-val" class="text-sm font-bold text-brand-600 bg-brand-50 px-2.5 py-0.5 rounded-lg">80%</span>
+                            </div>
+                            <input id="img-quality" type="range" min="10" max="100" value="80" class="w-full" oninput="document.getElementById('img-quality-val').textContent = this.value + '%'">
+                            <div class="flex justify-between text-xs text-slate-400 mt-1">
+                                <span>최대 압축 (10%)</span>
+                                <span>고화질 (100%)</span>
+                            </div>
+                        </div>
+
+                        <button onclick="processImage()" class="w-full py-4 bg-brand-600 hover:bg-brand-700 active:scale-[0.99] text-white font-bold rounded-xl shadow-md shadow-brand-500/20 transition-all text-base">
+                            변환하기
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Step 2: 결과 뷰 (2단계 흐름) -->
+                <div id="img-step-2" class="hidden fade-in">
+                    <!-- 결과 상단 광고 슬롯 -->
+                    <div class="w-full empty:hidden mb-4 flex justify-center">
+                        <!-- AD_SLOT_RESULT -->
+                    </div>
+
+                    <div class="bg-slate-50 rounded-2xl p-4 border border-slate-200 mb-4">
+                        <div class="flex items-center justify-between text-sm mb-3 pb-3 border-b border-slate-200">
+                            <div>
+                                <span class="text-slate-500 block text-xs">원본 용량</span>
+                                <span id="img-orig-size" class="font-bold text-slate-700">0 KB</span>
+                            </div>
+                            <div class="text-slate-400">→</div>
+                            <div>
+                                <span class="text-slate-500 block text-xs">변환 후 용량</span>
+                                <span id="img-new-size" class="font-bold text-brand-600">0 KB</span>
+                            </div>
+                            <div id="img-diff-badge" class="px-2.5 py-1 rounded-lg text-xs font-extrabold bg-emerald-100 text-emerald-700">
+                                -0%
+                            </div>
+                        </div>
+                        <div class="flex justify-center bg-white rounded-xl p-2 border border-slate-100 max-h-60 overflow-hidden">
+                            <img id="img-preview" src="" alt="변환된 이미지 미리보기" class="max-h-56 w-auto object-contain rounded-lg">
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col sm:flex-row gap-2.5">
+                        <a id="img-download-btn" href="#" download="converted.jpg" class="flex-1 py-4 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl shadow-md text-center transition-all">
+                            이미지 다운로드
+                        </a>
+                        <button onclick="resetImageTool()" class="py-4 px-5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl transition-all">
+                            다시 하기
+                        </button>
+                    </div>
+
+                    <!-- 결과 하단 광고 슬롯 -->
+                    <div class="w-full empty:hidden mt-4 flex justify-center">
+                        <!-- AD_SLOT_RESULT -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- =================================================================== -->
+        <!-- 1-2. 이미지 → PDF 변환기 (여러 사진을 하나의 PDF로 묶기) -->
+        <!-- =================================================================== -->
+        <section id="panel-img2pdf" class="tool-panel hidden fade-in">
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5 sm:p-6">
+                <h1 class="text-xl font-bold text-slate-900 mb-1">사진(이미지) → PDF 변환기</h1>
+                <p class="text-sm text-slate-500 mb-5">영수증, 신분증, 문서 사진 여러 장을 순서대로 정렬해 하나의 PDF로 만듭니다.</p>
+
+                <!-- Step 1: 다중 이미지 업로드 -->
+                <div id="img2pdf-step-1">
+                    <label for="img2pdf-input" class="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-slate-300 rounded-2xl cursor-pointer bg-slate-50 hover:bg-brand-50/50 hover:border-brand-500 transition-colors p-4 text-center">
+                        <svg class="w-10 h-10 text-brand-500 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        </svg>
+                        <span class="text-sm font-semibold text-slate-700">PDF로 만들 사진 선택 (여러 장 가능)</span>
+                        <span class="text-xs text-slate-400 mt-1">JPG, PNG, WEBP 지원 · 순서 변경 가능</span>
+                        <input id="img2pdf-input" type="file" accept="image/jpeg, image/png, image/webp" multiple class="hidden" onchange="handleImg2PdfFiles(this.files)" />
+                    </label>
+
+                    <!-- 선택된 사진 목록 -->
+                    <ul id="img2pdf-list" class="mt-4 space-y-2"></ul>
+
+                    <!-- 옵션 및 실행 버튼 -->
+                    <div id="img2pdf-controls" class="hidden mt-5 pt-4 border-t border-slate-100 space-y-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 mb-2">페이지 여백 및 크기</label>
+                            <div class="grid grid-cols-2 gap-1.5 sm:gap-2">
+                                <button type="button" onclick="selectImg2PdfFit('fit')" id="img2pdf-fit-btn" class="py-2.5 px-2 rounded-xl text-xs sm:text-sm font-bold border-2 border-brand-600 bg-brand-50 text-brand-700 leading-snug">원본 비율 맞춤 (여백 없음)</button>
+                                <button type="button" onclick="selectImg2PdfFit('a4')" id="img2pdf-a4-btn" class="py-2.5 px-2 rounded-xl text-xs sm:text-sm font-bold border border-slate-200 bg-white text-slate-600 leading-snug">A4 용지 맞춤 (여백 포함)</button>
+                            </div>
+                        </div>
+
+                        <button onclick="executeImg2Pdf()" class="w-full py-4 bg-brand-600 hover:bg-brand-700 active:scale-[0.99] text-white font-bold rounded-xl shadow-md shadow-brand-500/20 transition-all">
+                            PDF 파일로 변환하기
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Step 2: 결과 뷰 -->
+                <div id="img2pdf-step-2" class="hidden fade-in">
+                    <!-- 결과 상단 광고 슬롯 -->
+                    <div class="w-full empty:hidden mb-4 flex justify-center">
+                        <!-- AD_SLOT_RESULT -->
+                    </div>
+
+                    <div class="bg-emerald-50 border border-emerald-200 rounded-2xl p-5 text-center mb-4">
+                        <div class="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-2">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                        </div>
+                        <h3 class="font-bold text-slate-900 text-base">사진 PDF 변환 완료!</h3>
+                        <p class="text-xs text-slate-600 mt-1" id="img2pdf-result-desc">총 0장의 이미지가 하나의 PDF로 묶였습니다.</p>
+                    </div>
+
+                    <div class="flex flex-col sm:flex-row gap-2.5">
+                        <a id="img2pdf-download-btn" href="#" download="images_to_pdf.pdf" class="flex-1 py-4 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl shadow-md text-center transition-all">
+                            PDF 다운로드
+                        </a>
+                        <button onclick="resetImg2PdfTool()" class="py-4 px-5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl transition-all">
+                            다시 하기
+                        </button>
+                    </div>
+
+                    <!-- 결과 하단 광고 슬롯 -->
+                    <div class="w-full empty:hidden mt-4 flex justify-center">
+                        <!-- AD_SLOT_RESULT -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- =================================================================== -->
+        <!-- 2. 글자수 세기 & 텍스트 정리기 -->
+        <!-- =================================================================== -->
+        <section id="panel-txt" class="tool-panel hidden fade-in">
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5 sm:p-6">
+                <h1 class="text-xl font-bold text-slate-900 mb-1">글자수 세기 & 텍스트 정리</h1>
+                <p class="text-sm text-slate-500 mb-4">실시간 글자수를 확인하고 지저분한 공백과 줄바꿈을 한 번에 정리합니다.</p>
+
+                <!-- 실시간 카운트 대시보드 -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
+                    <div class="bg-slate-50 p-2.5 sm:p-3 rounded-xl border border-slate-200/70 text-center min-w-0">
+                        <span class="block text-[11px] text-slate-500 font-medium">공백 포함</span>
+                        <span id="cnt-with-space" class="text-base sm:text-xl font-extrabold text-brand-600 break-all">0</span>
+                    </div>
+                    <div class="bg-slate-50 p-2.5 sm:p-3 rounded-xl border border-slate-200/70 text-center min-w-0">
+                        <span class="block text-[11px] text-slate-500 font-medium">공백 제외</span>
+                        <span id="cnt-no-space" class="text-base sm:text-xl font-extrabold text-slate-800 break-all">0</span>
+                    </div>
+                    <div class="bg-slate-50 p-2.5 sm:p-3 rounded-xl border border-slate-200/70 text-center min-w-0">
+                        <span class="block text-[11px] text-slate-500 font-medium">단어 수</span>
+                        <span id="cnt-words" class="text-base sm:text-xl font-extrabold text-slate-800 break-all">0</span>
+                    </div>
+                    <div class="bg-slate-50 p-2.5 sm:p-3 rounded-xl border border-slate-200/70 text-center min-w-0">
+                        <span class="block text-[11px] text-slate-500 font-medium">줄 수</span>
+                        <span id="cnt-lines" class="text-base sm:text-xl font-extrabold text-slate-800 break-all">0</span>
+                    </div>
+                </div>
+
+                <!-- 텍스트 입력창 -->
+                <textarea id="txt-input" rows="7" placeholder="여기에 텍스트를 입력하거나 붙여넣으세요..." oninput="updateTextStats()" class="w-full min-w-0 p-3.5 sm:p-4 rounded-2xl border border-slate-300 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none text-sm sm:text-base leading-relaxed resize-y transition-all"></textarea>
+
+                <!-- 원클릭 정리 옵션 버튼 -->
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-3">
+                    <button onclick="cleanText('spaces')" class="py-3 px-3 bg-slate-100 hover:bg-slate-200 active:scale-[0.98] text-slate-700 text-xs sm:text-sm font-semibold rounded-xl transition-all">
+                        연속 공백 제거
+                    </button>
+                    <button onclick="cleanText('emptyLines')" class="py-3 px-3 bg-slate-100 hover:bg-slate-200 active:scale-[0.98] text-slate-700 text-xs sm:text-sm font-semibold rounded-xl transition-all">
+                        빈 줄 정리
+                    </button>
+                    <button onclick="cleanText('trim')" class="col-span-2 sm:col-span-1 py-3 px-3 bg-slate-100 hover:bg-slate-200 active:scale-[0.98] text-slate-700 text-xs sm:text-sm font-semibold rounded-xl transition-all">
+                        줄 앞뒤 공백 제거
+                    </button>
+                </div>
+
+                <!-- 2단계 실행/복사 액션 영역 -->
+                <div class="mt-4 pt-4 border-t border-slate-100 flex gap-2.5">
+                    <button onclick="cleanText('all')" class="flex-1 py-4 bg-brand-600 hover:bg-brand-700 active:scale-[0.99] text-white font-bold rounded-xl shadow-md shadow-brand-500/20 transition-all">
+                        전체 깔끔하게 정리하기
+                    </button>
+                    <button onclick="clearText()" class="py-4 px-4 bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold rounded-xl transition-all">
+                        지우기
+                    </button>
+                </div>
+
+                <!-- 결과 복사 뷰 (텍스트 입력/정리 시 노출) -->
+                <div id="txt-result-bar" class="hidden mt-4 fade-in">
+                    <!-- 결과 상단 광고 슬롯 -->
+                    <div class="w-full empty:hidden mb-3 flex justify-center">
+                        <!-- AD_SLOT_RESULT -->
+                    </div>
+
+                    <button onclick="copyTextResult()" class="w-full py-3.5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition-all">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path>
+                        </svg>
+                        <span>결과 텍스트 원클릭 복사</span>
+                    </button>
+
+                    <!-- 결과 하단 광고 슬롯 -->
+                    <div class="w-full empty:hidden mt-3 flex justify-center">
+                        <!-- AD_SLOT_RESULT -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- =================================================================== -->
+        <!-- 3. PDF 합치기 & 페이지 추출기 -->
+        <!-- =================================================================== -->
+        <section id="panel-pdf" class="tool-panel hidden fade-in">
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5 sm:p-6">
+                <h1 class="text-xl font-bold text-slate-900 mb-1">PDF 합치기 & 페이지 추출</h1>
+                <p class="text-sm text-slate-500 mb-4">여러 PDF를 하나로 합치거나 원하는 페이지만 골라 새 PDF로 저장합니다.</p>
+
+                <!-- 모드 전환 서브탭 -->
+                <div class="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-xl mb-5">
+                    <button onclick="switchPdfMode('merge')" id="pdf-mode-merge" class="py-2.5 text-sm font-bold rounded-lg bg-white text-brand-600 shadow-sm transition-all">
+                        PDF 합치기
+                    </button>
+                    <button onclick="switchPdfMode('extract')" id="pdf-mode-extract" class="py-2.5 text-sm font-bold rounded-lg text-slate-600 transition-all">
+                        페이지 추출하기
+                    </button>
+                </div>
+
+                <!-- Step 1: PDF 입력 영역 -->
+                <div id="pdf-step-1">
+                    <!-- 모드 A: PDF 합치기 -->
+                    <div id="pdf-merge-box">
+                        <label for="pdf-merge-input" class="flex flex-col items-center justify-center w-full h-36 border-2 border-dashed border-slate-300 rounded-2xl cursor-pointer bg-slate-50 hover:bg-brand-50/50 hover:border-brand-500 transition-colors p-4 text-center">
+                            <svg class="w-9 h-9 text-brand-500 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                            <span class="text-sm font-semibold text-slate-700">합칠 PDF 파일들 선택 (여러 개 가능)</span>
+                            <span class="text-xs text-slate-400 mt-1">순서를 위아래로 조정할 수 있습니다</span>
+                            <input id="pdf-merge-input" type="file" accept="application/pdf" multiple class="hidden" onchange="handlePdfMergeFiles(this.files)" />
+                        </label>
+
+                        <!-- 선택된 PDF 목록 -->
+                        <ul id="pdf-merge-list" class="mt-4 space-y-2"></ul>
+
+                        <button id="pdf-merge-btn" onclick="executePdfMerge()" class="hidden w-full mt-5 py-4 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl shadow-md shadow-brand-500/20 transition-all">
+                            PDF 하나로 합치기
+                        </button>
+                    </div>
+
+                    <!-- 모드 B: PDF 페이지 추출 -->
+                    <div id="pdf-extract-box" class="hidden">
+                        <label for="pdf-extract-input" class="flex flex-col items-center justify-center w-full h-36 border-2 border-dashed border-slate-300 rounded-2xl cursor-pointer bg-slate-50 hover:bg-brand-50/50 hover:border-brand-500 transition-colors p-4 text-center">
+                            <svg class="w-9 h-9 text-brand-500 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"></path>
+                            </svg>
+                            <span id="pdf-extract-label" class="text-sm font-semibold text-slate-700">추출할 PDF 파일 1개 선택</span>
+                            <span id="pdf-extract-pages-info" class="text-xs text-slate-400 mt-1">파일을 선택하면 총 페이지 수가 표시됩니다</span>
+                            <input id="pdf-extract-input" type="file" accept="application/pdf" class="hidden" onchange="handlePdfExtractFile(this.files[0])" />
+                        </label>
+
+                        <div id="pdf-extract-controls" class="hidden mt-5 space-y-4">
+                            <div>
+                                <label for="pdf-page-range" class="block text-sm font-semibold text-slate-700 mb-1.5">추출할 페이지 번호 입력</label>
+                                <input id="pdf-page-range" type="text" placeholder="예: 1, 3-5, 8" class="w-full p-3.5 rounded-xl border border-slate-300 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none text-base">
+                                <p class="text-xs text-slate-400 mt-1.5">쉼표(,)로 개별 페이지를, 하이픈(-)으로 범위를 지정하세요.</p>
+                            </div>
+                            <button onclick="executePdfExtract()" class="w-full py-4 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl shadow-md shadow-brand-500/20 transition-all">
+                                선택한 페이지 추출하기
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 2: PDF 결과 다운로드 뷰 -->
+                <div id="pdf-step-2" class="hidden fade-in">
+                    <!-- 결과 상단 광고 슬롯 -->
+                    <div class="w-full empty:hidden mb-4 flex justify-center">
+                        <!-- AD_SLOT_RESULT -->
+                    </div>
+
+                    <div class="bg-emerald-50 border border-emerald-200 rounded-2xl p-5 text-center mb-4">
+                        <div class="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-2">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                        </div>
+                        <h3 class="font-bold text-slate-900 text-base" id="pdf-result-title">PDF 작업이 완료되었습니다!</h3>
+                        <p class="text-xs text-slate-600 mt-1" id="pdf-result-desc">총 0페이지 분량의 새 PDF 파일이 준비되었습니다.</p>
+                    </div>
+
+                    <div class="flex flex-col sm:flex-row gap-2.5">
+                        <a id="pdf-download-btn" href="#" download="result.pdf" class="flex-1 py-4 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl shadow-md text-center transition-all">
+                            PDF 다운로드
+                        </a>
+                        <button onclick="resetPdfTool()" class="py-4 px-5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl transition-all">
+                            처음으로
+                        </button>
+                    </div>
+
+                    <!-- 결과 하단 광고 슬롯 -->
+                    <div class="w-full empty:hidden mt-4 flex justify-center">
+                        <!-- AD_SLOT_RESULT -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- =================================================================== -->
+        <!-- 4. 초간편 QR 코드 생성기 -->
+        <!-- =================================================================== -->
+        <section id="panel-qr" class="tool-panel hidden fade-in">
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5 sm:p-6">
+                <h1 class="text-xl font-bold text-slate-900 mb-1">초간편 QR 코드 생성기</h1>
+                <p class="text-sm text-slate-500 mb-5">웹사이트 링크(URL), 텍스트, 연락처 등을 입력하면 만료 없는 QR 코드를 즉시 생성합니다.</p>
+
+                <!-- Step 1: 입력 및 커스터마이징 -->
+                <div class="space-y-4">
+                    <div>
+                        <label for="qr-input" class="block text-sm font-semibold text-slate-700 mb-1.5">URL 또는 텍스트 입력</label>
+                        <input id="qr-input" type="text" placeholder="https://example.com 또는 원하는 문구 입력" class="w-full p-3.5 rounded-xl border border-slate-300 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none text-base">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label for="qr-color" class="block text-xs font-semibold text-slate-600 mb-1.5">QR 코드 색상</label>
+                            <div class="flex items-center gap-2 border border-slate-300 rounded-xl p-2 bg-slate-50">
+                                <input id="qr-color" type="color" value="#0f172a" class="w-8 h-8 rounded cursor-pointer border-0 bg-transparent">
+                                <span class="text-xs font-medium text-slate-600">색상 선택</span>
+                            </div>
+                        </div>
+                        <div>
+                            <label for="qr-size" class="block text-xs font-semibold text-slate-600 mb-1.5">저장 해상도</label>
+                            <select id="qr-size" class="w-full h-[50px] px-3 rounded-xl border border-slate-300 bg-slate-50 text-sm font-semibold text-slate-700 outline-none focus:border-brand-500">
+                                <option value="256">보통 (256px)</option>
+                                <option value="512" selected>고화질 (512px)</option>
+                                <option value="1024">인쇄용 초고화질 (1024px)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <button onclick="generateQRCode()" class="w-full py-4 bg-brand-600 hover:bg-brand-700 active:scale-[0.99] text-white font-bold rounded-xl shadow-md shadow-brand-500/20 transition-all">
+                        QR 코드 생성하기
+                    </button>
+                </div>
+
+                <!-- Step 2: 결과 다운로드 뷰 -->
+                <div id="qr-step-2" class="hidden mt-6 pt-6 border-t border-slate-100 fade-in">
+                    <!-- 결과 상단 광고 슬롯 -->
+                    <div class="w-full empty:hidden mb-4 flex justify-center">
+                        <!-- AD_SLOT_RESULT -->
+                    </div>
+
+                    <div class="bg-slate-50 border border-slate-200 rounded-2xl p-5 flex flex-col items-center justify-center mb-4">
+                        <div id="qr-canvas-container" class="bg-white p-3 rounded-xl shadow-xs border border-slate-100"></div>
+                        <p id="qr-caption" class="text-xs text-slate-500 mt-3 max-w-xs truncate text-center"></p>
+                    </div>
+
+                    <button onclick="downloadQRCode()" class="w-full py-4 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl shadow-md transition-all">
+                        QR 코드 이미지(PNG) 저장
+                    </button>
+
+                    <!-- 결과 하단 광고 슬롯 -->
+                    <div class="w-full empty:hidden mt-4 flex justify-center">
+                        <!-- AD_SLOT_RESULT -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- =================================================================== -->
+        <!-- 5. 비밀번호 생성기 & 보안 강도 체크 -->
+        <!-- =================================================================== -->
+        <section id="panel-pw" class="tool-panel hidden fade-in">
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5 sm:p-6">
+                <h1 class="text-xl font-bold text-slate-900 mb-1">비밀번호 생성기 & 강도 체크</h1>
+                <p class="text-sm text-slate-500 mb-5">암호학적 난수(crypto.getRandomValues)로 안전한 비밀번호를 즉시 생성하고 강도를 진단합니다.</p>
+
+                <div class="space-y-5">
+                    <!-- 비밀번호 길이 슬라이더 -->
+                    <div>
+                        <div class="flex justify-between items-center mb-2">
+                            <label for="pw-length" class="text-sm font-semibold text-slate-700">비밀번호 길이</label>
+                            <span id="pw-length-val" class="text-sm font-bold text-brand-600 bg-brand-50 px-2.5 py-0.5 rounded-lg">16자</span>
+                        </div>
+                        <input id="pw-length" type="range" min="6" max="40" value="16" class="w-full" oninput="document.getElementById('pw-length-val').textContent = this.value + '자'; generatePassword();">
+                        <div class="flex justify-between text-xs text-slate-400 mt-1">
+                            <span>6자</span>
+                            <span>24자</span>
+                            <span>40자</span>
+                        </div>
+                    </div>
+
+                    <!-- 문자 종류 옵션 -->
+                    <div class="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 gap-2">
+                        <label class="flex items-center gap-2.5 p-3 rounded-xl border border-slate-200 bg-slate-50 cursor-pointer text-xs sm:text-sm font-semibold text-slate-700">
+                            <input id="pw-upper" type="checkbox" checked onchange="generatePassword()" class="w-4 h-4 accent-brand-600 rounded">
+                            <span>대문자 (A-Z)</span>
+                        </label>
+                        <label class="flex items-center gap-2.5 p-3 rounded-xl border border-slate-200 bg-slate-50 cursor-pointer text-xs sm:text-sm font-semibold text-slate-700">
+                            <input id="pw-lower" type="checkbox" checked onchange="generatePassword()" class="w-4 h-4 accent-brand-600 rounded">
+                            <span>소문자 (a-z)</span>
+                        </label>
+                        <label class="flex items-center gap-2.5 p-3 rounded-xl border border-slate-200 bg-slate-50 cursor-pointer text-xs sm:text-sm font-semibold text-slate-700">
+                            <input id="pw-number" type="checkbox" checked onchange="generatePassword()" class="w-4 h-4 accent-brand-600 rounded">
+                            <span>숫자 (0-9)</span>
+                        </label>
+                        <label class="flex items-center gap-2.5 p-3 rounded-xl border border-slate-200 bg-slate-50 cursor-pointer text-xs sm:text-sm font-semibold text-slate-700">
+                            <input id="pw-symbol" type="checkbox" checked onchange="generatePassword()" class="w-4 h-4 accent-brand-600 rounded">
+                            <span>특수문자 (!@#$)</span>
+                        </label>
+                    </div>
+
+                    <button onclick="generatePassword()" class="w-full py-4 bg-brand-600 hover:bg-brand-700 active:scale-[0.99] text-white font-bold rounded-xl shadow-md shadow-brand-500/20 transition-all">
+                        새 비밀번호 생성하기
+                    </button>
+                </div>
+
+                <!-- 결과 & 보안 강도 뷰 -->
+                <div id="pw-result-box" class="mt-6 pt-5 border-t border-slate-100 fade-in">
+                    <!-- 결과 상단 광고 슬롯 -->
+                    <div class="w-full empty:hidden mb-4 flex justify-center">
+                        <!-- AD_SLOT_RESULT -->
+                    </div>
+
+                    <div class="bg-slate-50 border border-slate-200 rounded-2xl p-3.5 sm:p-4 space-y-3">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-white border border-slate-200 rounded-xl px-3.5 py-3">
+                            <input id="pw-output" type="text" readonly value="" oninput="checkPasswordStrength(this.value)" class="w-full min-w-0 font-mono text-sm sm:text-base font-bold text-slate-900 bg-transparent outline-none break-all">
+                            <button type="button" onclick="togglePwEditable()" id="pw-edit-btn" class="text-xs font-semibold text-slate-500 hover:text-slate-800 px-2.5 py-1.5 rounded-lg bg-slate-100 shrink-0 self-end sm:self-auto">
+                                직접입력 테스트
+                            </button>
+                        </div>
+
+                        <!-- 보안 강도 게이지 -->
+                        <div>
+                            <div class="flex justify-between items-center text-xs mb-1.5">
+                                <span class="font-semibold text-slate-600">보안 강도 진단</span>
+                                <span id="pw-strength-label" class="font-extrabold text-emerald-600">매우 강함</span>
+                            </div>
+                            <div class="w-full h-2.5 bg-slate-200 rounded-full overflow-hidden">
+                                <div id="pw-strength-bar" class="h-full w-full bg-emerald-500 transition-all duration-300"></div>
+                            </div>
+                            <p id="pw-strength-tip" class="text-[11px] text-slate-500 mt-1.5">다양한 문자 조합과 충분한 길이로 무차별 대입 공격에 매우 안전합니다.</p>
+                        </div>
+                    </div>
+
+                    <button onclick="copyPassword()" class="mt-4 w-full py-4 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl shadow-md transition-all">
+                        비밀번호 원클릭 복사
+                    </button>
+
+                    <!-- 결과 하단 광고 슬롯 -->
+                    <div class="w-full empty:hidden mt-4 flex justify-center">
+                        <!-- AD_SLOT_RESULT -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- =================================================================== -->
+        <!-- 6. 이미지 크기 조절 (픽셀 리사이즈) -->
+        <!-- =================================================================== -->
+        <section id="panel-resize" class="tool-panel hidden fade-in">
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5 sm:p-6">
+                <h1 class="text-xl font-bold text-slate-900 mb-1">이미지 크기 조절 (리사이즈)</h1>
+                <p class="text-sm text-slate-500 mb-5">블로그·쇼핑몰·증명사진 규격에 맞춰 가로·세로 픽셀 크기를 정확히 조절합니다.</p>
+
+                <!-- Step 1: 업로드 및 픽셀 설정 -->
+                <div id="resize-step-1">
+                    <label for="resize-input" class="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-slate-300 rounded-2xl cursor-pointer bg-slate-50 hover:bg-brand-50/50 hover:border-brand-500 transition-colors p-4 text-center">
+                        <svg class="w-10 h-10 text-brand-500 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path>
+                        </svg>
+                        <span id="resize-file-label" class="text-sm font-semibold text-slate-700">크기를 조절할 이미지 선택</span>
+                        <span id="resize-orig-dims" class="text-xs text-slate-400 mt-1">JPG, PNG, WEBP 지원</span>
+                        <input id="resize-input" type="file" accept="image/jpeg, image/png, image/webp" class="hidden" onchange="handleResizeFile(this.files[0])" />
+                    </label>
+
+                    <div id="resize-controls" class="hidden mt-5 pt-5 border-t border-slate-100 space-y-4">
+                        <!-- 자주 쓰는 가로 크기 프리셋 -->
+                        <div>
+                            <span class="block text-xs font-semibold text-slate-600 mb-2">빠른 가로 크기 프리셋</span>
+                            <div class="grid grid-cols-4 gap-2">
+                                <button type="button" onclick="applyWidthPreset(600)" class="py-2 rounded-xl text-xs font-bold bg-slate-100 hover:bg-brand-50 hover:text-brand-700 text-slate-700 transition-all">600px</button>
+                                <button type="button" onclick="applyWidthPreset(800)" class="py-2 rounded-xl text-xs font-bold bg-slate-100 hover:bg-brand-50 hover:text-brand-700 text-slate-700 transition-all">800px</button>
+                                <button type="button" onclick="applyWidthPreset(1080)" class="py-2 rounded-xl text-xs font-bold bg-slate-100 hover:bg-brand-50 hover:text-brand-700 text-slate-700 transition-all">1080px</button>
+                                <button type="button" onclick="applyWidthPreset(1920)" class="py-2 rounded-xl text-xs font-bold bg-slate-100 hover:bg-brand-50 hover:text-brand-700 text-slate-700 transition-all">1920px</button>
+                            </div>
+                        </div>
+
+                        <!-- 가로/세로 입력칸 -->
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label for="resize-width" class="block text-xs font-semibold text-slate-600 mb-1">가로 (px)</label>
+                                <input id="resize-width" type="number" min="1" max="8000" oninput="onResizeWidthChange()" class="w-full p-3 rounded-xl border border-slate-300 focus:border-brand-500 outline-none text-sm font-bold text-slate-800">
+                            </div>
+                            <div>
+                                <label for="resize-height" class="block text-xs font-semibold text-slate-600 mb-1">세로 (px)</label>
+                                <input id="resize-height" type="number" min="1" max="8000" oninput="onResizeHeightChange()" class="w-full p-3 rounded-xl border border-slate-300 focus:border-brand-500 outline-none text-sm font-bold text-slate-800">
+                            </div>
+                        </div>
+
+                        <label class="flex items-center gap-2 text-xs sm:text-sm font-semibold text-slate-700 cursor-pointer">
+                            <input id="resize-keep-ratio" type="checkbox" checked class="w-4 h-4 accent-brand-600 rounded">
+                            <span>원본 가로·세로 비율 고정</span>
+                        </label>
+
+                        <button onclick="executeResize()" class="w-full py-4 bg-brand-600 hover:bg-brand-700 active:scale-[0.99] text-white font-bold rounded-xl shadow-md shadow-brand-500/20 transition-all">
+                            크기 조절 실행하기
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Step 2: 결과 다운로드 뷰 -->
+                <div id="resize-step-2" class="hidden fade-in">
+                    <!-- 결과 상단 광고 슬롯 -->
+                    <div class="w-full empty:hidden mb-4 flex justify-center">
+                        <!-- AD_SLOT_RESULT -->
+                    </div>
+
+                    <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 mb-4">
+                        <div class="flex items-center justify-between text-xs sm:text-sm mb-3 pb-3 border-b border-slate-200">
+                            <div>
+                                <span class="text-slate-500 block text-[11px]">원본 크기</span>
+                                <span id="resize-res-orig" class="font-bold text-slate-700">0 × 0</span>
+                            </div>
+                            <div class="text-slate-400">→</div>
+                            <div>
+                                <span class="text-slate-500 block text-[11px]">조절된 크기</span>
+                                <span id="resize-res-new" class="font-bold text-brand-600">0 × 0</span>
+                            </div>
+                            <div>
+                                <span class="text-slate-500 block text-[11px]">파일 용량</span>
+                                <span id="resize-res-size" class="font-bold text-slate-700">0 KB</span>
+                            </div>
+                        </div>
+                        <div class="flex justify-center bg-white rounded-xl p-2 border border-slate-100 max-h-60 overflow-hidden">
+                            <img id="resize-preview" src="" alt="크기 조절된 이미지" class="max-h-56 w-auto object-contain rounded-lg">
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col sm:flex-row gap-2.5">
+                        <a id="resize-download-btn" href="#" download="resized.png" class="flex-1 py-4 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl shadow-md text-center transition-all">
+                            조절된 이미지 다운로드
+                        </a>
+                        <button onclick="resetResizeTool()" class="py-4 px-5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl transition-all">
+                            다시 하기
+                        </button>
+                    </div>
+
+                    <!-- 결과 하단 광고 슬롯 -->
+                    <div class="w-full empty:hidden mt-4 flex justify-center">
+                        <!-- AD_SLOT_RESULT -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- =================================================================== -->
+        <!-- 7. JSON / HTML / CSS 코드 포맷터 (줄맞춤 & 압축) -->
+        <!-- =================================================================== -->
+        <section id="panel-code" class="tool-panel hidden fade-in">
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5 sm:p-6">
+                <h1 class="text-xl font-bold text-slate-900 mb-1">JSON / HTML / CSS 코드 정리</h1>
+                <p class="text-sm text-slate-500 mb-4">엉킨 코드를 보기 좋게 줄맞춤(Beautify)하거나 공백을 없애 압축(Minify)합니다.</p>
+
+                <!-- 언어 선택 -->
+                <div class="grid grid-cols-3 gap-2 mb-3">
+                    <button type="button" onclick="selectCodeLang('json')" id="code-lang-json" class="code-lang-btn py-2.5 rounded-xl text-xs sm:text-sm font-bold border-2 border-brand-600 bg-brand-50 text-brand-700">JSON</button>
+                    <button type="button" onclick="selectCodeLang('html')" id="code-lang-html" class="code-lang-btn py-2.5 rounded-xl text-xs sm:text-sm font-bold border border-slate-200 bg-white text-slate-600">HTML</button>
+                    <button type="button" onclick="selectCodeLang('css')" id="code-lang-css" class="code-lang-btn py-2.5 rounded-xl text-xs sm:text-sm font-bold border border-slate-200 bg-white text-slate-600">CSS</button>
+                </div>
+
+                <!-- 코드 입력창 -->
+                <textarea id="code-input" rows="8" placeholder="정리할 JSON, HTML 또는 CSS 코드를 붙여넣으세요..." class="w-full min-w-0 p-3.5 sm:p-4 rounded-2xl border border-slate-300 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none font-mono text-xs sm:text-sm leading-relaxed resize-y transition-all"></textarea>
+
+                <!-- 줄맞춤 / 압축 실행 버튼 -->
+                <div class="grid grid-cols-2 gap-2 mt-4">
+                    <button onclick="formatCode('beautify')" class="py-3.5 sm:py-4 px-2 bg-brand-600 hover:bg-brand-700 active:scale-[0.99] text-white font-bold rounded-xl shadow-md shadow-brand-500/20 transition-all text-xs sm:text-base whitespace-nowrap">
+                        예쁘게 줄맞춤
+                    </button>
+                    <button onclick="formatCode('minify')" class="py-3.5 sm:py-4 px-2 bg-slate-800 hover:bg-slate-900 active:scale-[0.99] text-white font-bold rounded-xl transition-all text-xs sm:text-base whitespace-nowrap">
+                        한 줄로 압축
+                    </button>
+                </div>
+
+                <!-- 결과 복사 뷰 -->
+                <div id="code-result-bar" class="hidden mt-4 pt-4 border-t border-slate-100 fade-in">
+                    <!-- 결과 상단 광고 슬롯 -->
+                    <div class="w-full empty:hidden mb-3 flex justify-center">
+                        <!-- AD_SLOT_RESULT -->
+                    </div>
+
+                    <button onclick="copyCodeResult()" class="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition-all">
+                        <span>정리된 코드 원클릭 복사</span>
+                    </button>
+
+                    <!-- 결과 하단 광고 슬롯 -->
+                    <div class="w-full empty:hidden mt-3 flex justify-center">
+                        <!-- AD_SLOT_RESULT -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 애드센스 승인 및 SEO 최적화를 위한 도구 안내 & FAQ 섹션 -->
+        <!-- =================================================================== -->
+        <section class="mt-8 bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5 sm:p-6 space-y-6">
+            <div>
+                <h2 class="text-base font-bold text-slate-900 mb-2">QuickTools 무료 웹 유틸리티 안내</h2>
+                <p class="text-xs sm:text-sm text-slate-600 leading-relaxed">
+                    QuickTools는 별도의 프로그램 설치나 회원가입 없이 웹 브라우저에서 즉시 사용할 수 있는 올인원 실생활 문서·미디어 도구입니다.
+                    모든 연산은 사용자의 기기(Client-side) 내에서 HTML5 Canvas 및 최신 Web API를 통해 직접 처리되므로, 민감한 개인 문서나 사진이 외부 서버로 전송되지 않아 완벽한 개인정보 보호를 보장합니다.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-4 border-t border-slate-100">
+                <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200/60">
+                    <h3 class="text-xs font-bold text-slate-800 mb-1">1. 이미지 용량 줄이기 & 포맷 변환</h3>
+                    <p class="text-xs text-slate-500 leading-relaxed">블로그 포스팅, 이메일 첨부, 웹페이지 속도 최적화를 위해 고화질 사진(JPG, PNG)을 차세대 웹 포맷인 WEBP로 변환하거나 품질을 조절해 용량을 대폭 절감합니다.</p>
+                </div>
+                <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200/60">
+                    <h3 class="text-xs font-bold text-slate-800 mb-1">2. 자기소개서·블로그 글자수 세기</h3>
+                    <p class="text-xs text-slate-500 leading-relaxed">취업 자기소개서, SNS 게시물 작성 시 공백 포함/제외 글자수를 실시간으로 확인하고, 복사·붙여넣기 과정에서 생긴 불필요한 이중 공백과 빈 줄을 한 번에 정리합니다.</p>
+                </div>
+                <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200/60">
+                    <h3 class="text-xs font-bold text-slate-800 mb-1">3. PDF 문서 병합 및 페이지 추출</h3>
+                    <p class="text-xs text-slate-500 leading-relaxed">여러 개의 계약서, 영수증, 강의 자료 PDF를 원하는 순서대로 하나로 합치거나, 대용량 PDF에서 필요한 특정 페이지만 골라 새로운 PDF로 즉시 저장합니다.</p>
+                </div>
+                <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200/60">
+                    <h3 class="text-xs font-bold text-slate-800 mb-1">4. 고해상도 맞춤형 QR 코드 생성</h3>
+                    <p class="text-xs text-slate-500 leading-relaxed">유효기간 만료 걱정 없는 영구적 QR 코드를 생성합니다. 브랜드 컬러를 지정하고 인쇄용 초고화질(1024px) PNG 이미지로 다운로드할 수 있습니다.</p>
+                </div>
+                <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200/60 sm:col-span-2">
+                    <h3 class="text-xs font-bold text-slate-800 mb-1">5. 사진(이미지) → PDF 문서 변환</h3>
+                    <p class="text-xs text-slate-500 leading-relaxed">스마트폰으로 촬영한 증빙 서류, 영수증, 계약서 사진 여러 장을 순서대로 정렬하여 제출하기 편한 단일 PDF 문서로 즉시 변환합니다.</p>
+                </div>
+                <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200/60">
+                    <h3 class="text-xs font-bold text-slate-800 mb-1">6. 안전 비밀번호 생성 & 강도 체크</h3>
+                    <p class="text-xs text-slate-500 leading-relaxed">브라우저 암호화 난수 생성기(crypto.getRandomValues)로 예측 불가능한 비밀번호를 만들고 안전도를 실시간으로 진단합니다.</p>
+                </div>
+                <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200/60">
+                    <h3 class="text-xs font-bold text-slate-800 mb-1">7. 이미지 픽셀 크기 조절(리사이즈)</h3>
+                    <p class="text-xs text-slate-500 leading-relaxed">블로그·쇼핑몰 업로드 기준에 맞춰 가로·세로 픽셀 크기를 비율 유지 또는 자유 지정으로 빠르게 조절합니다.</p>
+                </div>
+                <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200/60 sm:col-span-2">
+                    <h3 class="text-xs font-bold text-slate-800 mb-1">8. JSON / HTML / CSS 코드 포맷터</h3>
+                    <p class="text-xs text-slate-500 leading-relaxed">블로거나 개발자가 복사한 JSON, HTML, CSS 코드를 가독성 높게 들여쓰기 정렬하거나 용량을 줄이기 위해 압축합니다.</p>
+                </div>
+            </div>
+
+            <!-- 자주 묻는 질문 (FAQ) -->
+            <div class="pt-4 border-t border-slate-100 space-y-3">
+                <h2 class="text-sm font-bold text-slate-900">자주 묻는 질문 (FAQ)</h2>
+                <details class="group bg-slate-50 rounded-xl border border-slate-200/60 p-3.5 cursor-pointer">
+                    <summary class="text-xs font-bold text-slate-800 flex justify-between items-center list-none">
+                        <span>Q. 업로드한 사진이나 PDF 파일이 서버에 저장되나요?</span>
+                        <span class="text-slate-400 group-open:rotate-180 transition-transform">▼</span>
+                    </summary>
+                    <p class="text-xs text-slate-600 mt-2 leading-relaxed">
+                        아니요. 본 사이트는 백엔드 스토리지 서버를 사용하지 않습니다. 모든 파일 처리는 100% 사용자 브라우저 메모리 내에서만 실행되며, 페이지를 닫거나 새로고침하면 모든 데이터가 즉시 소멸됩니다.
+                    </p>
+                </details>
+                <details class="group bg-slate-50 rounded-xl border border-slate-200/60 p-3.5 cursor-pointer">
+                    <summary class="text-xs font-bold text-slate-800 flex justify-between items-center list-none">
+                        <span>Q. 모바일 스마트폰에서도 모든 기능을 쓸 수 있나요?</span>
+                        <span class="text-slate-400 group-open:rotate-180 transition-transform">▼</span>
+                    </summary>
+                    <p class="text-xs text-slate-600 mt-2 leading-relaxed">
+                        네, 아이폰(Safari) 및 안드로이드(Chrome, 삼성 인터넷) 등 모든 모바일 브라우저에서 갤러리 사진 선택, PDF 병합, QR 코드 저장 기능을 동일하게 이용하실 수 있습니다.
+                    </p>
+                </details>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- 하단 안내 푸터 (애드센스 필수 정책 링크 포함) -->
+    <footer class="max-w-2xl w-full mx-auto px-4 py-6 text-center space-y-3">
+        <p class="text-xs text-slate-500 flex items-center justify-center gap-1.5 leading-snug">
+            <svg class="w-4 h-4 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+            </svg>
+            <span>모든 파일은 서버에 저장되지 않고 내 기기에서만 처리됩니다</span>
+        </p>
+        <div class="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs text-slate-400">
+            <button type="button" onclick="openPolicyModal('privacy')" class="hover:text-slate-600 underline underline-offset-2 whitespace-nowrap">개인정보처리방침</button>
+            <span>|</span>
+            <button type="button" onclick="openPolicyModal('terms')" class="hover:text-slate-600 underline underline-offset-2 whitespace-nowrap">이용약관</button>
+            <span>|</span>
+            <span class="whitespace-nowrap">© 2026 QuickTools</span>
+        </div>
+    </footer>
+
+    <!-- 개인정보처리방침 & 이용약관 모달 (애드센스 심사 필수 요건 충족) -->
+    <div id="policy-modal" class="hidden fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
+        <div class="bg-white rounded-2xl max-w-lg w-full max-h-[85vh] flex flex-col shadow-xl border border-slate-200 fade-in overflow-hidden">
+            <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+                <h3 id="policy-title" class="font-bold text-slate-900 text-base">개인정보처리방침</h3>
+                <button type="button" onclick="closePolicyModal()" class="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg">✕</button>
+            </div>
+            <div id="policy-content" class="p-5 overflow-y-auto text-xs sm:text-sm text-slate-600 space-y-3 leading-relaxed">
+                <!-- 동적 내용 삽입 -->
+            </div>
+            <div class="px-5 py-3 border-t border-slate-100 text-right">
+                <button type="button" onclick="closePolicyModal()" class="px-5 py-2.5 bg-slate-900 text-white text-xs font-bold rounded-xl">닫기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 커스텀 토스트 알림창 (alert 대체) -->
+    <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 pointer-events-none opacity-0 transition-all duration-300 translate-y-2 max-w-[92vw]">
+        <div id="toast-msg" class="bg-slate-900 text-white text-xs sm:text-sm font-medium px-4 sm:px-5 py-3 rounded-full shadow-lg truncate">
+            알림 메시지
+        </div>
+    </div>
+
+    <script>
+        /* ==========================================================================
+           공통 UI 및 토스트 알림 유틸리티
+           ========================================================================== */
+        let toastTimer;
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toast-msg');
+            toastMsg.textContent = message;
+            toast.classList.remove('opacity-0', 'translate-y-2');
+            toast.classList.add('opacity-100', 'translate-y-0');
+
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => {
+                toast.classList.remove('opacity-100', 'translate-y-0');
+                toast.classList.add('opacity-0', 'translate-y-2');
+            }, 2500);
+        }
+
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // 상단 4개 탭 전환
+        function switchTab(tabId) {
+            document.querySelectorAll('.tool-panel').forEach(panel => panel.classList.add('hidden'));
+            document.getElementById('panel-' + tabId).classList.remove('hidden');
+
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('bg-brand-600', 'text-white', 'shadow-sm');
+                btn.classList.add('text-slate-600', 'hover:bg-slate-100');
+            });
+            const activeBtn = document.getElementById('tab-' + tabId);
+            activeBtn.classList.remove('text-slate-600', 'hover:bg-slate-100');
+            activeBtn.classList.add('bg-brand-600', 'text-white', 'shadow-sm');
+        }
+
+        /* ==========================================================================
+           1. 이미지 용량 줄이기 & 확장자 변환 로직 (Canvas API)
+           ========================================================================== */
+        let currentImgFile = null;
+        let selectedImgMime = 'image/jpeg';
+        let selectedImgExt = 'jpg';
+
+        const imgInput = document.getElementById('img-input');
+        const imgDropzone = document.getElementById('img-dropzone');
+
+        imgInput.addEventListener('change', (e) => {
+            if (e.target.files && e.target.files[0]) {
+                loadImageFile(e.target.files[0]);
+            }
+        });
+
+        // 드래그 앤 드롭 이벤트
+        imgDropzone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            imgDropzone.classList.add('border-brand-500', 'bg-brand-50/50');
+        });
+        imgDropzone.addEventListener('dragleave', () => {
+            imgDropzone.classList.remove('border-brand-500', 'bg-brand-50/50');
+        });
+        imgDropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            imgDropzone.classList.remove('border-brand-500', 'bg-brand-50/50');
+            if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                const file = e.dataTransfer.files[0];
+                if (!file.type.startsWith('image/')) {
+                    showToast('이미지 파일만 업로드할 수 있습니다.');
+                    return;
+                }
+                loadImageFile(file);
+            }
+        });
+
+        function loadImageFile(file) {
+            currentImgFile = file;
+            document.getElementById('img-file-label').textContent = `${file.name} (${formatBytes(file.size)})`;
+            document.getElementById('img-controls').classList.remove('hidden');
+            document.getElementById('img-step-2').classList.add('hidden');
+        }
+
+        function selectImgFormat(mime, ext) {
+            selectedImgMime = mime;
+            selectedImgExt = ext;
+
+            document.querySelectorAll('.img-fmt-btn').forEach(btn => {
+                if (btn.dataset.fmt === mime) {
+                    btn.className = 'img-fmt-btn py-3 rounded-xl text-sm font-bold border-2 border-brand-600 bg-brand-50 text-brand-700';
+                } else {
+                    btn.className = 'img-fmt-btn py-3 rounded-xl text-sm font-bold border border-slate-200 bg-white text-slate-600';
+                }
+            });
+
+            // PNG는 무손실 포맷이므로 품질 슬라이더 안내 조절
+            const qualityBox = document.getElementById('img-quality-box');
+            if (mime === 'image/png') {
+                qualityBox.classList.add('opacity-40', 'pointer-events-none');
+            } else {
+                qualityBox.classList.remove('opacity-40', 'pointer-events-none');
+            }
+        }
+
+        function processImage() {
+            if (!currentImgFile) {
+                showToast('먼저 이미지를 선택해주세요.');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    const ctx = canvas.getContext('2d');
+
+                    // JPG 변환 시 투명 배경을 흰색으로 채움
+                    if (selectedImgMime === 'image/jpeg') {
+                        ctx.fillStyle = '#FFFFFF';
+                        ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    }
+                    ctx.drawImage(img, 0, 0);
+
+                    const quality = parseInt(document.getElementById('img-quality').value, 10) / 100;
+                    canvas.toBlob((blob) => {
+                        if (!blob) {
+                            showToast('이미지 변환 중 오류가 발생했습니다.');
+                            return;
+                        }
+
+                        const url = URL.createObjectURL(blob);
+                        const origSize = currentImgFile.size;
+                        const newSize = blob.size;
+                        const diffPercent = Math.round(((origSize - newSize) / origSize) * 100);
+
+                        document.getElementById('img-orig-size').textContent = formatBytes(origSize);
+                        document.getElementById('img-new-size').textContent = formatBytes(newSize);
+
+                        const badge = document.getElementById('img-diff-badge');
+                        if (diffPercent > 0) {
+                            badge.textContent = `-${diffPercent}% 감소`;
+                            badge.className = 'px-2.5 py-1 rounded-lg text-xs font-extrabold bg-emerald-100 text-emerald-700';
+                        } else {
+                            badge.textContent = `+${Math.abs(diffPercent)}% 증가`;
+                            badge.className = 'px-2.5 py-1 rounded-lg text-xs font-extrabold bg-amber-100 text-amber-700';
+                        }
+
+                        document.getElementById('img-preview').src = url;
+                        const baseName = currentImgFile.name.replace(/\.[^/.]+$/, "");
+                        const dlBtn = document.getElementById('img-download-btn');
+                        dlBtn.href = url;
+                        dlBtn.download = `${baseName}_optimized.${selectedImgExt}`;
+
+                        document.getElementById('img-step-1').classList.add('hidden');
+                        document.getElementById('img-step-2').classList.remove('hidden');
+                        showToast('이미지 변환이 완료되었습니다!');
+                    }, selectedImgMime, quality);
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(currentImgFile);
+        }
+
+        function resetImageTool() {
+            currentImgFile = null;
+            imgInput.value = '';
+            document.getElementById('img-file-label').textContent = '터치하여 이미지 선택 또는 드래그';
+            document.getElementById('img-controls').classList.add('hidden');
+            document.getElementById('img-step-2').classList.add('hidden');
+            document.getElementById('img-step-1').classList.remove('hidden');
+        }
+
+        /* ==========================================================================
+           1-2. 사진(이미지) → PDF 변환기 로직 (pdf-lib + Canvas)
+           ========================================================================== */
+        let img2PdfFiles = [];
+        let img2PdfFitMode = 'fit'; // 'fit' | 'a4'
+
+        function handleImg2PdfFiles(fileList) {
+            const files = Array.from(fileList).filter(f => f.type.startsWith('image/'));
+            if (files.length === 0) {
+                showToast('이미지 파일(JPG, PNG, WEBP)만 선택할 수 있습니다.');
+                return;
+            }
+            img2PdfFiles = img2PdfFiles.concat(files);
+            renderImg2PdfList();
+        }
+
+        function renderImg2PdfList() {
+            const listEl = document.getElementById('img2pdf-list');
+            const controls = document.getElementById('img2pdf-controls');
+            listEl.innerHTML = '';
+
+            if (img2PdfFiles.length > 0) {
+                controls.classList.remove('hidden');
+            } else {
+                controls.classList.add('hidden');
+            }
+
+            img2PdfFiles.forEach((file, idx) => {
+                const li = document.createElement('li');
+                li.className = 'flex items-center justify-between bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm';
+                li.innerHTML = `
+                    <div class="flex items-center gap-2.5 overflow-hidden">
+                        <span class="w-6 h-6 rounded-lg bg-brand-100 text-brand-700 font-bold text-xs flex items-center justify-center shrink-0">${idx + 1}</span>
+                        <span class="truncate font-medium text-slate-700">${file.name}</span>
+                    </div>
+                    <div class="flex items-center gap-1 shrink-0 ml-2">
+                        <button type="button" onclick="moveImg2PdfFile(${idx}, -1)" class="p-1.5 text-slate-500 hover:bg-slate-200 rounded-lg" title="위로">▲</button>
+                        <button type="button" onclick="moveImg2PdfFile(${idx}, 1)" class="p-1.5 text-slate-500 hover:bg-slate-200 rounded-lg" title="아래로">▼</button>
+                        <button type="button" onclick="removeImg2PdfFile(${idx})" class="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg" title="삭제">✕</button>
+                    </div>
+                `;
+                listEl.appendChild(li);
+            });
+        }
+
+        function moveImg2PdfFile(index, direction) {
+            const newIndex = index + direction;
+            if (newIndex < 0 || newIndex >= img2PdfFiles.length) return;
+            const temp = img2PdfFiles[index];
+            img2PdfFiles[index] = img2PdfFiles[newIndex];
+            img2PdfFiles[newIndex] = temp;
+            renderImg2PdfList();
+        }
+
+        function removeImg2PdfFile(index) {
+            img2PdfFiles.splice(index, 1);
+            renderImg2PdfList();
+        }
+
+        function selectImg2PdfFit(mode) {
+            img2PdfFitMode = mode;
+            const fitBtn = document.getElementById('img2pdf-fit-btn');
+            const a4Btn = document.getElementById('img2pdf-a4-btn');
+            if (mode === 'fit') {
+                fitBtn.className = 'py-2.5 rounded-xl text-xs sm:text-sm font-bold border-2 border-brand-600 bg-brand-50 text-brand-700';
+                a4Btn.className = 'py-2.5 rounded-xl text-xs sm:text-sm font-bold border border-slate-200 bg-white text-slate-600';
+            } else {
+                a4Btn.className = 'py-2.5 rounded-xl text-xs sm:text-sm font-bold border-2 border-brand-600 bg-brand-50 text-brand-700';
+                fitBtn.className = 'py-2.5 rounded-xl text-xs sm:text-sm font-bold border border-slate-200 bg-white text-slate-600';
+            }
+        }
+
+        // WEBP 등 모든 이미지를 Canvas를 거쳐 표준 JPEG 바이트로 변환하여 pdf-lib 호환성 100% 보장
+        function fileToJpegBytes(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = img.width;
+                        canvas.height = img.height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.fillStyle = '#FFFFFF';
+                        ctx.fillRect(0, 0, canvas.width, canvas.height);
+                        ctx.drawImage(img, 0, 0);
+                        canvas.toBlob(async (blob) => {
+                            if (!blob) return reject(new Error('Blob failed'));
+                            const arrayBuffer = await blob.arrayBuffer();
+                            resolve({ bytes: arrayBuffer, width: img.width, height: img.height });
+                        }, 'image/jpeg', 0.92);
+                    };
+                    img.onerror = reject;
+                    img.src = e.target.result;
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+
+        async function executeImg2Pdf() {
+            if (img2PdfFiles.length === 0) {
+                showToast('변환할 이미지를 1장 이상 선택해주세요.');
+                return;
+            }
+
+            try {
+                showToast('사진을 PDF로 변환하는 중입니다...');
+                const { PDFDocument } = PDFLib;
+                const pdfDoc = await PDFDocument.create();
+
+                for (const file of img2PdfFiles) {
+                    const { bytes, width, height } = await fileToJpegBytes(file);
+                    const jpgImage = await pdfDoc.embedJpg(bytes);
+
+                    if (img2PdfFitMode === 'fit') {
+                        const page = pdfDoc.addPage([width, height]);
+                        page.drawImage(jpgImage, { x: 0, y: 0, width, height });
+                    } else {
+                        // A4 세로 규격 (595.28 x 841.89 pt) + 여백 30pt
+                        const a4W = 595.28;
+                        const a4H = 841.89;
+                        const margin = 30;
+                        const maxW = a4W - margin * 2;
+                        const maxH = a4H - margin * 2;
+                        const scale = Math.min(maxW / width, maxH / height);
+                        const drawW = width * scale;
+                        const drawH = height * scale;
+
+                        const page = pdfDoc.addPage([a4W, a4H]);
+                        page.drawImage(jpgImage, {
+                            x: (a4W - drawW) / 2,
+                            y: (a4H - drawH) / 2,
+                            width: drawW,
+                            height: drawH
+                        });
+                    }
+                }
+
+                const pdfBytes = await pdfDoc.save();
+                const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+                const url = URL.createObjectURL(blob);
+
+                document.getElementById('img2pdf-result-desc').textContent = `총 ${img2PdfFiles.length}장의 사진이 하나의 PDF로 변환되었습니다.`;
+                const dlBtn = document.getElementById('img2pdf-download-btn');
+                dlBtn.href = url;
+                dlBtn.download = 'images_combined.pdf';
+
+                document.getElementById('img2pdf-step-1').classList.add('hidden');
+                document.getElementById('img2pdf-step-2').classList.remove('hidden');
+                showToast('PDF 변환이 완료되었습니다!');
+            } catch (err) {
+                console.error(err);
+                showToast('이미지 변환 중 오류가 발생했습니다.');
+            }
+        }
+
+        function resetImg2PdfTool() {
+            img2PdfFiles = [];
+            document.getElementById('img2pdf-input').value = '';
+            document.getElementById('img2pdf-list').innerHTML = '';
+            document.getElementById('img2pdf-controls').classList.add('hidden');
+            document.getElementById('img2pdf-step-2').classList.add('hidden');
+            document.getElementById('img2pdf-step-1').classList.remove('hidden');
+        }
+
+        /* ==========================================================================
+           2. 글자수 세기 & 텍스트 정리기 로직
+           ========================================================================== */
+        function updateTextStats() {
+            const text = document.getElementById('txt-input').value;
+            const withSpace = text.length;
+            const noSpace = text.replace(/\s/g, '').length;
+            const words = text.trim() === '' ? 0 : text.trim().split(/\s+/).length;
+            const lines = text === '' ? 0 : text.split(/\r\n|\r|\n/).length;
+
+            document.getElementById('cnt-with-space').textContent = withSpace.toLocaleString();
+            document.getElementById('cnt-no-space').textContent = noSpace.toLocaleString();
+            document.getElementById('cnt-words').textContent = words.toLocaleString();
+            document.getElementById('cnt-lines').textContent = lines.toLocaleString();
+
+            const resultBar = document.getElementById('txt-result-bar');
+            if (text.length > 0) {
+                resultBar.classList.remove('hidden');
+            } else {
+                resultBar.classList.add('hidden');
+            }
+        }
+
+        function cleanText(mode) {
+            const textarea = document.getElementById('txt-input');
+            let text = textarea.value;
+            if (!text) {
+                showToast('정리할 텍스트를 먼저 입력해주세요.');
+                return;
+            }
+
+            if (mode === 'spaces') {
+                // 줄바꿈을 유지하면서 가로 연속 공백만 1칸으로 축소
+                text = text.replace(/[^\S\r\n]+/g, ' ');
+                showToast('불필요한 연속 공백을 제거했습니다.');
+            } else if (mode === 'emptyLines') {
+                // 2개 이상의 연속 빈 줄을 1줄로 정리
+                text = text.replace(/(\r?\n\s*){2,}/g, '\n');
+                showToast('빈 줄을 깔끔하게 정리했습니다.');
+            } else if (mode === 'trim') {
+                // 각 줄의 앞뒤 공백 제거
+                text = text.split(/\r?\n/).map(line => line.trim()).join('\n').trim();
+                showToast('각 줄의 앞뒤 공백을 제거했습니다.');
+            } else if (mode === 'all') {
+                text = text
+                    .split(/\r?\n/)
+                    .map(line => line.trim().replace(/[^\S\r\n]+/g, ' '))
+                    .filter(line => line.length > 0)
+                    .join('\n');
+                showToast('모든 공백과 빈 줄을 깔끔하게 정리했습니다!');
+            }
+
+            textarea.value = text;
+            updateTextStats();
+        }
+
+        function clearText() {
+            const textarea = document.getElementById('txt-input');
+            textarea.value = '';
+            updateTextStats();
+            textarea.focus();
+        }
+
+        function copyTextResult() {
+            const textarea = document.getElementById('txt-input');
+            if (!textarea.value) return;
+
+            textarea.select();
+            textarea.setSelectionRange(0, 99999);
+            try {
+                document.execCommand('copy');
+                showToast('클립보드에 텍스트가 복사되었습니다!');
+            } catch (err) {
+                showToast('복사에 실패했습니다. 직접 선택해 복사해주세요.');
+            }
+            window.getSelection().removeAllRanges();
+        }
+
+        /* ==========================================================================
+           3. PDF 합치기 & 페이지 추출기 로직 (pdf-lib)
+           ========================================================================== */
+        let pdfMergeFiles = [];
+        let pdfExtractFile = null;
+        let pdfExtractTotalPages = 0;
+
+        function switchPdfMode(mode) {
+            const mergeBtn = document.getElementById('pdf-mode-merge');
+            const extractBtn = document.getElementById('pdf-mode-extract');
+            const mergeBox = document.getElementById('pdf-merge-box');
+            const extractBox = document.getElementById('pdf-extract-box');
+
+            resetPdfTool();
+
+            if (mode === 'merge') {
+                mergeBtn.className = 'py-2.5 text-sm font-bold rounded-lg bg-white text-brand-600 shadow-sm transition-all';
+                extractBtn.className = 'py-2.5 text-sm font-bold rounded-lg text-slate-600 transition-all';
+                mergeBox.classList.remove('hidden');
+                extractBox.classList.add('hidden');
+            } else {
+                extractBtn.className = 'py-2.5 text-sm font-bold rounded-lg bg-white text-brand-600 shadow-sm transition-all';
+                mergeBtn.className = 'py-2.5 text-sm font-bold rounded-lg text-slate-600 transition-all';
+                extractBox.classList.remove('hidden');
+                mergeBox.classList.add('hidden');
+            }
+        }
+
+        function handlePdfMergeFiles(fileList) {
+            const files = Array.from(fileList).filter(f => f.type === 'application/pdf');
+            if (files.length === 0) {
+                showToast('PDF 파일만 선택할 수 있습니다.');
+                return;
+            }
+            pdfMergeFiles = pdfMergeFiles.concat(files);
+            renderPdfMergeList();
+        }
+
+        function renderPdfMergeList() {
+            const listEl = document.getElementById('pdf-merge-list');
+            const mergeBtn = document.getElementById('pdf-merge-btn');
+            listEl.innerHTML = '';
+
+            if (pdfMergeFiles.length > 0) {
+                mergeBtn.classList.remove('hidden');
+            } else {
+                mergeBtn.classList.add('hidden');
+            }
+
+            pdfMergeFiles.forEach((file, idx) => {
+                const li = document.createElement('li');
+                li.className = 'flex items-center justify-between bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm';
+                li.innerHTML = `
+                    <div class="flex items-center gap-2.5 overflow-hidden">
+                        <span class="w-6 h-6 rounded-lg bg-brand-100 text-brand-700 font-bold text-xs flex items-center justify-center shrink-0">${idx + 1}</span>
+                        <span class="truncate font-medium text-slate-700">${file.name}</span>
+                    </div>
+                    <div class="flex items-center gap-1 shrink-0 ml-2">
+                        <button type="button" onclick="movePdfMergeFile(${idx}, -1)" class="p-1.5 text-slate-500 hover:bg-slate-200 rounded-lg" title="위로">▲</button>
+                        <button type="button" onclick="movePdfMergeFile(${idx}, 1)" class="p-1.5 text-slate-500 hover:bg-slate-200 rounded-lg" title="아래로">▼</button>
+                        <button type="button" onclick="removePdfMergeFile(${idx})" class="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg" title="삭제">✕</button>
+                    </div>
+                `;
+                listEl.appendChild(li);
+            });
+        }
+
+        function movePdfMergeFile(index, direction) {
+            const newIndex = index + direction;
+            if (newIndex < 0 || newIndex >= pdfMergeFiles.length) return;
+            const temp = pdfMergeFiles[index];
+            pdfMergeFiles[index] = pdfMergeFiles[newIndex];
+            pdfMergeFiles[newIndex] = temp;
+            renderPdfMergeList();
+        }
+
+        function removePdfMergeFile(index) {
+            pdfMergeFiles.splice(index, 1);
+            renderPdfMergeList();
+        }
+
+        async function executePdfMerge() {
+            if (pdfMergeFiles.length < 2) {
+                showToast('합치려면 최소 2개 이상의 PDF 파일이 필요합니다.');
+                return;
+            }
+
+            try {
+                showToast('PDF 파일을 합치는 중입니다...');
+                const { PDFDocument } = PDFLib;
+                const mergedPdf = await PDFDocument.create();
+
+                for (const file of pdfMergeFiles) {
+                    const arrayBuffer = await file.arrayBuffer();
+                    const pdf = await PDFDocument.load(arrayBuffer);
+                    const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
+                    copiedPages.forEach((page) => mergedPdf.addPage(page));
+                }
+
+                const pdfBytes = await mergedPdf.save();
+                const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+                const url = URL.createObjectURL(blob);
+
+                document.getElementById('pdf-result-title').textContent = 'PDF 병합이 완료되었습니다!';
+                document.getElementById('pdf-result-desc').textContent = `총 ${mergedPdf.getPageCount()}페이지 분량의 PDF가 생성되었습니다.`;
+                const dlBtn = document.getElementById('pdf-download-btn');
+                dlBtn.href = url;
+                dlBtn.download = 'merged_document.pdf';
+
+                document.getElementById('pdf-step-1').classList.add('hidden');
+                document.getElementById('pdf-step-2').classList.remove('hidden');
+                showToast('PDF 합치기 완료!');
+            } catch (err) {
+                console.error(err);
+                showToast('암호가 걸려있거나 손상된 PDF는 처리할 수 없습니다.');
+            }
+        }
+
+        async function handlePdfExtractFile(file) {
+            if (!file || file.type !== 'application/pdf') {
+                showToast('올바른 PDF 파일을 선택해주세요.');
+                return;
+            }
+
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                const { PDFDocument } = PDFLib;
+                const pdf = await PDFDocument.load(arrayBuffer);
+                pdfExtractFile = file;
+                pdfExtractTotalPages = pdf.getPageCount();
+
+                document.getElementById('pdf-extract-label').textContent = file.name;
+                document.getElementById('pdf-extract-pages-info').textContent = `총 ${pdfExtractTotalPages}페이지 (1 ~ ${pdfExtractTotalPages})`;
+                document.getElementById('pdf-extract-controls').classList.remove('hidden');
+            } catch (err) {
+                showToast('PDF 파일을 읽을 수 없습니다. (암호 보호 여부 확인)');
+            }
+        }
+
+        function parsePageRanges(rangeStr, maxPages) {
+            const pages = new Set();
+            const parts = rangeStr.split(',');
+            for (let part of parts) {
+                part = part.trim();
+                if (!part) continue;
+                if (part.includes('-')) {
+                    const [startStr, endStr] = part.split('-');
+                    const start = parseInt(startStr, 10);
+                    const end = parseInt(endStr, 10);
+                    if (isNaN(start) || isNaN(end) || start < 1 || end > maxPages || start > end) {
+                        throw new Error('Invalid range');
+                    }
+                    for (let i = start; i <= end; i++) pages.add(i - 1);
+                } else {
+                    const pageNum = parseInt(part, 10);
+                    if (isNaN(pageNum) || pageNum < 1 || pageNum > maxPages) {
+                        throw new Error('Invalid page');
+                    }
+                    pages.add(pageNum - 1);
+                }
+            }
+            return Array.from(pages).sort((a, b) => a - b);
+        }
+
+        async function executePdfExtract() {
+            if (!pdfExtractFile) return;
+            const rangeStr = document.getElementById('pdf-page-range').value;
+            if (!rangeStr.trim()) {
+                showToast('추출할 페이지 번호를 입력해주세요.');
+                return;
+            }
+
+            let targetIndices;
+            try {
+                targetIndices = parsePageRanges(rangeStr, pdfExtractTotalPages);
+                if (targetIndices.length === 0) throw new Error('Empty');
+            } catch (e) {
+                showToast(`1부터 ${pdfExtractTotalPages} 사이의 올바른 페이지 번호를 입력하세요.`);
+                return;
+            }
+
+            try {
+                const arrayBuffer = await pdfExtractFile.arrayBuffer();
+                const { PDFDocument } = PDFLib;
+                const srcPdf = await PDFDocument.load(arrayBuffer);
+                const newPdf = await PDFDocument.create();
+
+                const copiedPages = await newPdf.copyPages(srcPdf, targetIndices);
+                copiedPages.forEach(page => newPdf.addPage(page));
+
+                const pdfBytes = await newPdf.save();
+                const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+                const url = URL.createObjectURL(blob);
+
+                document.getElementById('pdf-result-title').textContent = '페이지 추출이 완료되었습니다!';
+                document.getElementById('pdf-result-desc').textContent = `선택한 ${targetIndices.length}페이지가 새 PDF로 저장되었습니다.`;
+                const dlBtn = document.getElementById('pdf-download-btn');
+                dlBtn.href = url;
+                const baseName = pdfExtractFile.name.replace(/\.[^/.]+$/, "");
+                dlBtn.download = `${baseName}_extracted.pdf`;
+
+                document.getElementById('pdf-step-1').classList.add('hidden');
+                document.getElementById('pdf-step-2').classList.remove('hidden');
+                showToast('페이지 추출 완료!');
+            } catch (err) {
+                showToast('PDF 추출 중 오류가 발생했습니다.');
+            }
+        }
+
+        function resetPdfTool() {
+            pdfMergeFiles = [];
+            pdfExtractFile = null;
+            pdfExtractTotalPages = 0;
+            document.getElementById('pdf-merge-input').value = '';
+            document.getElementById('pdf-extract-input').value = '';
+            document.getElementById('pdf-page-range').value = '';
+            document.getElementById('pdf-merge-list').innerHTML = '';
+            document.getElementById('pdf-merge-btn').classList.add('hidden');
+            document.getElementById('pdf-extract-controls').classList.add('hidden');
+            document.getElementById('pdf-extract-label').textContent = '추출할 PDF 파일 1개 선택';
+            document.getElementById('pdf-extract-pages-info').textContent = '파일을 선택하면 총 페이지 수가 표시됩니다';
+            document.getElementById('pdf-step-2').classList.add('hidden');
+            document.getElementById('pdf-step-1').classList.remove('hidden');
+        }
+
+        /* ==========================================================================
+           4. 초간편 QR 코드 생성기 로직 (QRCode.js)
+           ========================================================================== */
+        function generateQRCode() {
+            const text = document.getElementById('qr-input').value.trim();
+            if (!text) {
+                showToast('QR 코드로 만들 URL이나 텍스트를 입력해주세요.');
+                document.getElementById('qr-input').focus();
+                return;
+            }
+
+            const colorDark = document.getElementById('qr-color').value;
+            const size = parseInt(document.getElementById('qr-size').value, 10);
+            const container = document.getElementById('qr-canvas-container');
+            container.innerHTML = '';
+
+            // QRCode 라이브러리로 고해상도 캔버스 생성 후 화면에는 반응형 크기로 표시
+            new QRCode(container, {
+                text: text,
+                width: size,
+                height: size,
+                colorDark: colorDark,
+                colorLight: '#ffffff',
+                correctLevel: QRCode.CorrectLevel.H
+            });
+
+            // 생성된 캔버스/이미지의 화면 표시 크기 제한
+            setTimeout(() => {
+                const img = container.querySelector('img');
+                const canvas = container.querySelector('canvas');
+                if (img) {
+                    img.style.width = '200px';
+                    img.style.height = '200px';
+                    img.classList.add('rounded-lg');
+                }
+                if (canvas) {
+                    canvas.style.maxWidth = '200px';
+                    canvas.style.maxHeight = '200px';
+                }
+            }, 30);
+
+            document.getElementById('qr-caption').textContent = text;
+            document.getElementById('qr-step-2').classList.remove('hidden');
+            showToast('QR 코드가 생성되었습니다!');
+        }
+
+        function downloadQRCode() {
+            const container = document.getElementById('qr-canvas-container');
+            const canvas = container.querySelector('canvas');
+            const img = container.querySelector('img');
+
+            let dataUrl = '';
+            if (canvas) {
+                dataUrl = canvas.toDataURL('image/png');
+            } else if (img && img.src) {
+                dataUrl = img.src;
+            } else {
+                showToast('다운로드할 QR 코드가 없습니다.');
+                return;
+            }
+
+            const link = document.createElement('a');
+            link.href = dataUrl;
+            link.download = 'qrcode.png';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showToast('QR 코드 이미지가 저장되었습니다!');
+        }
+
+        /* ==========================================================================
+           5. 개인정보처리방침 및 이용약관 모달 제어
+           ========================================================================== */
+        function openPolicyModal(type) {
+            const modal = document.getElementById('policy-modal');
+            const title = document.getElementById('policy-title');
+            const content = document.getElementById('policy-content');
+
+            if (type === 'privacy') {
+                title.textContent = '개인정보처리방침';
+                content.innerHTML = `
+                    <p><strong>1. 개인정보 및 파일의 수집·저장 여부</strong><br>QuickTools(이하 '본 서비스')는 회원가입 절차가 없으며, 사용자가 업로드하는 이미지, PDF 문서, 입력 텍스트 등 어떠한 파일이나 데이터도 외부 서버로 전송하거나 수집·저장하지 않습니다. 모든 변환 작업은 사용자의 브라우저 내에서 로컬로만 처리됩니다.</p>
+                    <p><strong>2. 쿠키(Cookie) 및 맞춤형 광고 안내</strong><br>본 서비스는 무료 운영을 위해 Google AdSense 등 제3자 광고 서비스를 게재할 수 있습니다. Google을 포함한 제3자 공급업체는 사용자의 이전 웹사이트 방문 기록을 기반으로 광고를 게재하기 위해 쿠키를 사용합니다.</p>
+                    <p><strong>3. 맞춤형 광고 설정 해제</strong><br>사용자는 <a href="https://adssettings.google.com" target="_blank" rel="noopener noreferrer" class="text-brand-600 underline">Google 광고 설정</a> 페이지를 방문하여 맞춤형 광고를 사용 중지할 수 있습니다.</p>
+                `;
+            } else {
+                title.textContent = '이용약관';
+                content.innerHTML = `
+                    <p><strong>1. 목적</strong><br>본 약관은 QuickTools가 제공하는 웹 기반 파일·텍스트 유틸리티 서비스의 이용 조건 및 절차에 관한 사항을 규정합니다.</p>
+                    <p><strong>2. 서비스 이용 및 책임의 한계</strong><br>본 서비스는 무료로 제공되며, 사용자는 합법적인 목적에 한해 서비스를 이용할 수 있습니다. 브라우저 환경이나 기기 성능에 따라 대용량 파일 처리 시 메모리 제한이 발생할 수 있으며, 중요한 원본 파일은 반드시 별도로 백업한 후 이용하시기 바랍니다.</p>
+                    <p><strong>3. 지식재산권</strong><br>사용자가 본 도구를 통해 변환·생성한 결과물에 대한 모든 권리는 원저작자 및 사용자 본인에게 귀속됩니다.</p>
+                `;
+            }
+
+            modal.classList.remove('hidden');
+        }
+
+        function closePolicyModal() {
+            document.getElementById('policy-modal').classList.add('hidden');
+        }
+
+        /* ==========================================================================
+           6. 비밀번호 생성기 & 보안 강도 체크 로직 (crypto.getRandomValues)
+           ========================================================================== */
+        function generatePassword() {
+            const len = parseInt(document.getElementById('pw-length').value, 10);
+            const useUpper = document.getElementById('pw-upper').checked;
+            const useLower = document.getElementById('pw-lower').checked;
+            const useNumber = document.getElementById('pw-number').checked;
+            const useSymbol = document.getElementById('pw-symbol').checked;
+
+            let pool = '';
+            if (useUpper) pool += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+            if (useLower) pool += 'abcdefghijklmnopqrstuvwxyz';
+            if (useNumber) pool += '0123456789';
+            if (useSymbol) pool += '!@#$%^&*()-_=+[]{}';
+
+            if (!pool) {
+                showToast('최소 1개 이상의 문자 종류를 선택해주세요.');
+                document.getElementById('pw-lower').checked = true;
+                pool = 'abcdefghijklmnopqrstuvwxyz';
+            }
+
+            const randomValues = new Uint32Array(len);
+            crypto.getRandomValues(randomValues);
+
+            let password = '';
+            for (let i = 0; i < len; i++) {
+                password += pool[randomValues[i] % pool.length];
+            }
+
+            const outputEl = document.getElementById('pw-output');
+            outputEl.value = password;
+            checkPasswordStrength(password);
+        }
+
+        function checkPasswordStrength(pw) {
+            const labelEl = document.getElementById('pw-strength-label');
+            const barEl = document.getElementById('pw-strength-bar');
+            const tipEl = document.getElementById('pw-strength-tip');
+
+            if (!pw) {
+                barEl.style.width = '0%';
+                labelEl.textContent = '없음';
+                labelEl.className = 'font-extrabold text-slate-400';
+                tipEl.textContent = '비밀번호를 입력하거나 생성해보세요.';
+                return;
+            }
+
+            let score = 0;
+            if (pw.length >= 8) score += 20;
+            if (pw.length >= 12) score += 20;
+            if (pw.length >= 16) score += 15;
+            if (/[A-Z]/.test(pw)) score += 15;
+            if (/[a-z]/.test(pw)) score += 10;
+            if (/[0-9]/.test(pw)) score += 10;
+            if (/[^A-Za-z0-9]/.test(pw)) score += 10;
+
+            score = Math.min(100, score);
+            barEl.style.width = score + '%';
+
+            if (score < 40) {
+                barEl.className = 'h-full bg-rose-500 transition-all duration-300';
+                labelEl.textContent = '취약함';
+                labelEl.className = 'font-extrabold text-rose-600';
+                tipEl.textContent = '길이를 12자 이상으로 늘리고 대문자·숫자·특수문자를 섞어보세요.';
+            } else if (score < 70) {
+                barEl.className = 'h-full bg-amber-500 transition-all duration-300';
+                labelEl.textContent = '보통';
+                labelEl.className = 'font-extrabold text-amber-600';
+                tipEl.textContent = '기본적인 보안은 갖추었지만, 중요 계정에는 14자 이상을 권장합니다.';
+            } else if (score < 90) {
+                barEl.className = 'h-full bg-brand-600 transition-all duration-300';
+                labelEl.textContent = '강함';
+                labelEl.className = 'font-extrabold text-brand-600';
+                tipEl.textContent = '안전한 비밀번호 조합입니다.';
+            } else {
+                barEl.className = 'h-full bg-emerald-500 transition-all duration-300';
+                labelEl.textContent = '매우 강함';
+                labelEl.className = 'font-extrabold text-emerald-600';
+                tipEl.textContent = '길이와 문자 다양성이 뛰어나 매우 안전한 비밀번호입니다.';
+            }
+        }
+
+        function togglePwEditable() {
+            const outputEl = document.getElementById('pw-output');
+            const btnEl = document.getElementById('pw-edit-btn');
+            const isReadOnly = outputEl.hasAttribute('readonly');
+            if (isReadOnly) {
+                outputEl.removeAttribute('readonly');
+                outputEl.focus();
+                btnEl.textContent = '읽기전용';
+                showToast('원하는 비밀번호를 입력해 강도를 테스트해보세요.');
+            } else {
+                outputEl.setAttribute('readonly', true);
+                btnEl.textContent = '직접입력 테스트';
+            }
+        }
+
+        function copyPassword() {
+            const outputEl = document.getElementById('pw-output');
+            if (!outputEl.value) return;
+            const prevReadOnly = outputEl.hasAttribute('readonly');
+            outputEl.removeAttribute('readonly');
+            outputEl.select();
+            outputEl.setSelectionRange(0, 99999);
+            try {
+                document.execCommand('copy');
+                showToast('비밀번호가 클립보드에 복사되었습니다!');
+            } catch (err) {
+                showToast('복사에 실패했습니다.');
+            }
+            if (prevReadOnly) outputEl.setAttribute('readonly', true);
+            window.getSelection().removeAllRanges();
+        }
+
+        // 페이지 로드 시 기본 비밀번호 1회 생성
+        window.addEventListener('DOMContentLoaded', () => {
+            generatePassword();
+        });
+
+        /* ==========================================================================
+           7. 이미지 크기 조절 (픽셀 리사이즈) 로직 (Canvas API)
+           ========================================================================== */
+        let resizeSourceFile = null;
+        let resizeOrigW = 0;
+        let resizeOrigH = 0;
+
+        function handleResizeFile(file) {
+            if (!file || !file.type.startsWith('image/')) {
+                showToast('이미지 파일만 선택할 수 있습니다.');
+                return;
+            }
+            resizeSourceFile = file;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    resizeOrigW = img.width;
+                    resizeOrigH = img.height;
+                    document.getElementById('resize-file-label').textContent = file.name;
+                    document.getElementById('resize-orig-dims').textContent = `원본 해상도: ${resizeOrigW} × ${resizeOrigH} px`;
+                    document.getElementById('resize-width').value = resizeOrigW;
+                    document.getElementById('resize-height').value = resizeOrigH;
+                    document.getElementById('resize-controls').classList.remove('hidden');
+                    document.getElementById('resize-step-2').classList.add('hidden');
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function applyWidthPreset(targetW) {
+            if (!resizeOrigW || !resizeOrigH) return;
+            document.getElementById('resize-width').value = targetW;
+            if (document.getElementById('resize-keep-ratio').checked) {
+                document.getElementById('resize-height').value = Math.max(1, Math.round((resizeOrigH / resizeOrigW) * targetW));
+            }
+        }
+
+        function onResizeWidthChange() {
+            if (!resizeOrigW || !resizeOrigH) return;
+            if (!document.getElementById('resize-keep-ratio').checked) return;
+            const w = parseInt(document.getElementById('resize-width').value, 10);
+            if (!isNaN(w) && w > 0) {
+                document.getElementById('resize-height').value = Math.max(1, Math.round((resizeOrigH / resizeOrigW) * w));
+            }
+        }
+
+        function onResizeHeightChange() {
+            if (!resizeOrigW || !resizeOrigH) return;
+            if (!document.getElementById('resize-keep-ratio').checked) return;
+            const h = parseInt(document.getElementById('resize-height').value, 10);
+            if (!isNaN(h) && h > 0) {
+                document.getElementById('resize-width').value = Math.max(1, Math.round((resizeOrigW / resizeOrigH) * h));
+            }
+        }
+
+        function executeResize() {
+            if (!resizeSourceFile) {
+                showToast('먼저 이미지를 선택해주세요.');
+                return;
+            }
+            const targetW = parseInt(document.getElementById('resize-width').value, 10);
+            const targetH = parseInt(document.getElementById('resize-height').value, 10);
+            if (isNaN(targetW) || isNaN(targetH) || targetW < 1 || targetH < 1) {
+                showToast('올바른 가로·세로 픽셀 값을 입력해주세요.');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = targetW;
+                    canvas.height = targetH;
+                    const ctx = canvas.getContext('2d');
+                    ctx.imageSmoothingEnabled = true;
+                    ctx.imageSmoothingQuality = 'high';
+                    ctx.drawImage(img, 0, 0, targetW, targetH);
+
+                    const outMime = resizeSourceFile.type === 'image/png' ? 'image/png' : (resizeSourceFile.type === 'image/webp' ? 'image/webp' : 'image/jpeg');
+                    const outExt = outMime === 'image/png' ? 'png' : (outMime === 'image/webp' ? 'webp' : 'jpg');
+
+                    canvas.toBlob((blob) => {
+                        if (!blob) {
+                            showToast('크기 조절 중 오류가 발생했습니다.');
+                            return;
+                        }
+                        const url = URL.createObjectURL(blob);
+                        document.getElementById('resize-res-orig').textContent = `${resizeOrigW} × ${resizeOrigH}`;
+                        document.getElementById('resize-res-new').textContent = `${targetW} × ${targetH}`;
+                        document.getElementById('resize-res-size').textContent = formatBytes(blob.size);
+                        document.getElementById('resize-preview').src = url;
+
+                        const baseName = resizeSourceFile.name.replace(/\.[^/.]+$/, "");
+                        const dlBtn = document.getElementById('resize-download-btn');
+                        dlBtn.href = url;
+                        dlBtn.download = `${baseName}_${targetW}x${targetH}.${outExt}`;
+
+                        document.getElementById('resize-step-1').classList.add('hidden');
+                        document.getElementById('resize-step-2').classList.remove('hidden');
+                        showToast('이미지 크기 조절이 완료되었습니다!');
+                    }, outMime, 0.9);
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(resizeSourceFile);
+        }
+
+        function resetResizeTool() {
+            resizeSourceFile = null;
+            resizeOrigW = 0;
+            resizeOrigH = 0;
+            document.getElementById('resize-input').value = '';
+            document.getElementById('resize-file-label').textContent = '크기를 조절할 이미지 선택';
+            document.getElementById('resize-orig-dims').textContent = 'JPG, PNG, WEBP 지원';
+            document.getElementById('resize-controls').classList.add('hidden');
+            document.getElementById('resize-step-2').classList.add('hidden');
+            document.getElementById('resize-step-1').classList.remove('hidden');
+        }
+
+        /* ==========================================================================
+           8. JSON / HTML / CSS 코드 포맷터 로직 (Beautify & Minify)
+           ========================================================================== */
+        let currentCodeLang = 'json';
+
+        function selectCodeLang(lang) {
+            currentCodeLang = lang;
+            document.querySelectorAll('.code-lang-btn').forEach(btn => {
+                btn.className = 'code-lang-btn py-2.5 rounded-xl text-xs sm:text-sm font-bold border border-slate-200 bg-white text-slate-600';
+            });
+            const active = document.getElementById('code-lang-' + lang);
+            active.className = 'code-lang-btn py-2.5 rounded-xl text-xs sm:text-sm font-bold border-2 border-brand-600 bg-brand-50 text-brand-700';
+        }
+
+        function beautifyHtml(html) {
+            const formatted = html.replace(/>\s*</g, '><').trim();
+            const tokens = formatted.split(/(<[^>]+>)/g).filter(t => t.trim() !== '');
+            let indent = 0;
+            const voidTags = new Set(['area','base','br','col','embed','hr','img','input','link','meta','param','source','track','wbr']);
+            const lines = [];
+
+            for (const token of tokens) {
+                if (token.startsWith('</')) {
+                    indent = Math.max(0, indent - 1);
+                    lines.push('  '.repeat(indent) + token);
+                } else if (token.startsWith('<') && !token.startsWith('<!') && !token.startsWith('<?')) {
+                    lines.push('  '.repeat(indent) + token);
+                    const tagMatch = token.match(/^<([a-zA-Z0-9-]+)/);
+                    const tagName = tagMatch ? tagMatch[1].toLowerCase() : '';
+                    const isSelfClosing = token.endsWith('/>') || voidTags.has(tagName);
+                    if (!isSelfClosing) {
+                        indent += 1;
+                    }
+                } else {
+                    lines.push('  '.repeat(indent) + token.trim());
+                }
+            }
+            return lines.join('\n');
+        }
+
+        function minifyHtml(html) {
+            return html
+                .replace(/<!--[\s\S]*?-->/g, '')
+                .replace(/>\s+</g, '><')
+                .replace(/\s{2,}/g, ' ')
+                .trim();
+        }
+
+        function beautifyCss(css) {
+            let clean = css.replace(/\s+/g, ' ').trim();
+            clean = clean
+                .replace(/\s*{\s*/g, ' {\n  ')
+                .replace(/;\s*/g, ';\n  ')
+                .replace(/\s*}\s*/g, '\n}\n')
+                .replace(/\n  \n}/g, '\n}');
+            return clean.trim();
+        }
+
+        function minifyCss(css) {
+            return css
+                .replace(/\/\*[\s\S]*?\*\//g, '')
+                .replace(/\s*([{}:;,])\s*/g, '$1')
+                .replace(/;}/g, '}')
+                .replace(/\s{2,}/g, ' ')
+                .trim();
+        }
+
+        function formatCode(mode) {
+            const textarea = document.getElementById('code-input');
+            const raw = textarea.value.trim();
+            if (!raw) {
+                showToast('정리할 코드를 먼저 입력해주세요.');
+                return;
+            }
+
+            try {
+                let result = '';
+                if (currentCodeLang === 'json') {
+                    const parsed = JSON.parse(raw);
+                    result = mode === 'beautify' ? JSON.stringify(parsed, null, 2) : JSON.stringify(parsed);
+                } else if (currentCodeLang === 'html') {
+                    result = mode === 'beautify' ? beautifyHtml(raw) : minifyHtml(raw);
+                } else if (currentCodeLang === 'css') {
+                    result = mode === 'beautify' ? beautifyCss(raw) : minifyCss(raw);
+                }
+
+                textarea.value = result;
+                document.getElementById('code-result-bar').classList.remove('hidden');
+                showToast(mode === 'beautify' ? '코드를 깔끔하게 줄맞춤했습니다!' : '코드를 한 줄로 압축했습니다!');
+            } catch (err) {
+                showToast(currentCodeLang.toUpperCase() + ' 문법을 확인해주세요. (유효하지 않은 구문)');
+            }
+        }
+
+        function copyCodeResult() {
+            const textarea = document.getElementById('code-input');
+            if (!textarea.value) return;
+            textarea.select();
+            textarea.setSelectionRange(0, 99999);
+            try {
+                document.execCommand('copy');
+                showToast('정리된 코드가 복사되었습니다!');
+            } catch (err) {
+                showToast('복사에 실패했습니다.');
+            }
+            window.getSelection().removeAllRanges();
+        }
+    </script>
+</body>
+</html>
